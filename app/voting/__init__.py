@@ -3,8 +3,10 @@ Blueprint for the API endpoints pertaining to the Voting contract
 NOTE: Registered with the url_prefix '/candidates'
 """
 from flask import Blueprint
+from flask import g
 from flask_restplus import Api, Resource, reqparse
 import app.constants as C
+from .helpers import filter_candidate_added
 
 voting = Blueprint('voting', __name__)
 
@@ -15,6 +17,8 @@ api = Api(voting, default='voting', doc='/documentation',
 reqparser = reqparse.RequestParser()
 reqparser.add_argument('from-block', location='args', help='Block number to begin scanning from')
 
+
+
 @api.route('/', methods=['GET'])
 @api.expect(reqparser)
 class Candidates(Resource):
@@ -22,20 +26,21 @@ class Candidates(Resource):
         """
         Fetch and return all candidates posted from [from_block || 0] until latest.
         """
-        # TODO implement paging
+        # TODO implement paging?
 
-        # TODO can likely abstract out this from_block bit as will be omnipresent
+        items = []
         args = reqparser.parse_args()
-        from_block = 0
-        if args['from-block'] != None:
-            from_block = args['from-block']
-
-        # TODO protocol stuff...
+        from_block = int(args['from-block']) if args['from-block'] != None else 0
         to_block = 0
 
-        # TODO database stuff
+        # protocol stuff... TODO handle blockchain reverts
+        events = filter_candidate_added(g, from_block)
+        for event in events:
+            # TODO dynamo stuff
+            items.append(g.w3.toHex(event['args']['hash'])) # byte array not json serializable, convert it
+            to_block = max(to_block, event['blockNumber'])
 
-        return {'items': [], 'from_block': from_block, 'to_block': to_block}, 200
+        return {'items': items, 'from_block': from_block, 'to_block': to_block}, 200
 
 # NOTE: We have to use 'type' interchangeably with 'kind' cuz reserved keyword fail...
 @api.route('/<string:type>', methods=['GET'])
@@ -46,18 +51,19 @@ class CandidatesByKind(Resource):
         """
         Fetch and return all candidates posted from [from_block || 0] until latest of a given kind.
         """
-        # TODO implement paging
+        # TODO implement paging?
 
-        # TODO can likely abstract out this from_block bit as will be omnipresent
+        items = []
         args = reqparser.parse_args()
-        from_block = 0
-        if args['from-block'] != None:
-            from_block = args['from-block']
+        from_block = int(args['from-block']) if args['from-block'] != None else 0
+        to_block = 0
 
         # TODO protocol stuff...
-        to_block = 0
         int_kind = C.candidate_kinds[type]
+        events = filter_candidate_added(g, from_block, {'kind': int_kind})
+        for event in events:
+            # TODO dynamo stuff
+            items.append(g.w3.toHex(event['args']['hash'])) # byte array not json serializable, convert it
+            to_block = max(to_block, event['blockNumber'])
 
-        # TODO database stuff
-
-        return {'items': [], 'from_block': from_block, 'to_block': to_block, 'kind': int_kind}, 200
+        return {'items': items, 'from_block': from_block, 'to_block': to_block, 'kind': int_kind}, 200

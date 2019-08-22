@@ -1,5 +1,6 @@
 import os
 import json
+from flask import current_app
 import pytest
 from app import app
 from web3 import Web3
@@ -190,6 +191,7 @@ def datatrust(w3, datatrust_pre, listing):
 @pytest.fixture(scope='module')
 def ctx(w3, ether_token, voting, datatrust, listing):
     ctx = app.app_context()
+    ctx.push()
     with ctx:
         addresses = dict(
             ether_token_address=ether_token.address,
@@ -207,5 +209,6 @@ def test_client(w3, ether_token, voting, datatrust, listing, ctx):
     """
     The App setup and Flask client for testing
     """
-    with app.test_client() as client:
-        yield client
+    with ctx:
+        with current_app.test_client() as client:
+            yield client
