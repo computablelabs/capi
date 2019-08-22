@@ -2,8 +2,8 @@ import os
 import json
 import pytest
 from app import app
-import web3
 from web3 import Web3
+from protocol import set_w3, set_contract_addresses
 import computable # we use this to get the path to the contract abi/bin in the installed lib (rather than copy/paste them)
 from computable.contracts import EtherToken
 from computable.contracts import MarketToken
@@ -13,14 +13,6 @@ from computable.contracts import Reserve
 from computable.contracts import Datatrust
 from computable.contracts import Listing
 from computable.helpers.transaction import transact
-
-@pytest.fixture(scope='module')
-def client():
-    """
-    The Flask app configured for testing
-    """
-    client = app.test_client()
-    yield client
 
 # setup deployed protocol
 @pytest.fixture(scope="module")
@@ -36,7 +28,7 @@ def w3(test_provider):
 # TODO this will be removed when computable.py updates next (contract changes, no args for ether_token construction)
 @pytest.fixture(scope="module")
 def ether_token_opts():
-    return {'init_bal': Web3.toWei(1, 'ether')}
+    return {'init_bal': Web3.toWei(4, 'ether')}
 
 @pytest.fixture(scope="module")
 def ether_token(w3, ether_token_opts):
@@ -56,7 +48,7 @@ def ether_token(w3, ether_token_opts):
 
 @pytest.fixture(scope='module')
 def market_token_opts():
-    return {'init_bal': Web3.toWei(2, 'ether')}
+    return {'init_bal': Web3.toWei(4, 'ether')}
 
 @pytest.fixture(scope='module')
 def market_token_pre(w3, market_token_opts):
@@ -194,3 +186,26 @@ def datatrust(w3, datatrust_pre, listing):
     tx_hash = transact(datatrust_pre.set_privileged(listing.address))
     tx_rcpt = w3.eth.waitForTransactionReceipt(tx_hash)
     return datatrust_pre
+
+@pytest.fixture(scope='module')
+def ctx(w3, ether_token, voting, datatrust, listing):
+    ctx = app.app_context()
+    with ctx:
+        addresses = dict(
+            ether_token_address=ether_token.address,
+            voting_address=voting.address,
+            datatrust_address=datatrust.address,
+            listing_address=listing.address,
+            )
+
+        set_w3(ctx, w3)
+        set_contract_addresses(ctx, addresses)
+        yield ctx
+
+@pytest.fixture(scope='module')
+def test_client(w3, ether_token, voting, datatrust, listing, ctx):
+    """
+    The App setup and Flask client for testing
+    """
+    with app.test_client() as client:
+        yield client
