@@ -194,14 +194,14 @@ def ctx(w3, ether_token, voting, datatrust, listing):
     ctx.push()
     with ctx:
         addresses = dict(
-            ether_token_address=ether_token.address,
-            voting_address=voting.address,
-            datatrust_address=datatrust.address,
-            listing_address=listing.address,
+            ether_token=ether_token.address,
+            voting=voting.address,
+            datatrust=datatrust.address,
+            listing=listing.address,
             )
 
-        set_w3(ctx, w3)
-        set_contract_addresses(ctx, addresses)
+        set_w3(w3)
+        set_contract_addresses(addresses)
         yield ctx
 
 @pytest.fixture(scope='module')

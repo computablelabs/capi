@@ -24,7 +24,7 @@ class Listings(Resource):
         args = parse_listings(req_parser.parse_args())
 
         # protocol stuff... TODO handle blockchain reverts
-        events = filter_listed(g, args['from_block'], args['filters'])
+        events = filter_listed(args['from_block'], args['filters'])
         hashes = []
         to_block = 0
 

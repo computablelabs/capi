@@ -10,7 +10,7 @@ from .parsers import req_parser, parse_candidates, parse_candidates_by_kind
 
 voting = Blueprint('voting', __name__)
 
-api = Api(voting, default='voting', doc='/documentation',
+api = Api(voting, default='candidates', doc='/documentation',
     title=C.TITLE, version=C.VERSION, description='API abstractions pertaining to the Computable Voting contract')
 
 @api.route('/', methods=['GET'])
@@ -25,7 +25,7 @@ class Candidates(Resource):
         args = parse_candidates(req_parser.parse_args())
 
         # protocol stuff... TODO handle blockchain reverts
-        events = filter_candidate_added(g, args['from_block'], args['filters'])
+        events = filter_candidate_added(args['from_block'], args['filters'])
         hashes = []
         to_block = 0
 
@@ -51,7 +51,7 @@ class CandidatesByKind(Resource):
         args = parse_candidates_by_kind(req_parser.parse_args(), type)
 
         # TODO handle blockchain reverts
-        events = filter_candidate_added(g, args['from_block'], args['filters'])
+        events = filter_candidate_added(args['from_block'], args['filters'])
         hashes = []
         to_block = 0
 
