@@ -1,7 +1,14 @@
+"""
+Methods that deal with the Computable Protocol aspects of operating a Datatrust API,
+Ideally, these functions are "pan-blueprint" as blueprint specific functionality can be
+placed in its own helper file.
+TODO: implement celery for blockchain methods?
+"""
 from flask import current_app, g
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-from computable.contracts import Datatrust
+from computable.contracts import Voting, Datatrust, Listing
+from computable.helpers.transaction import call, transact, send
 
 def set_w3(w3=None):
     """
@@ -29,12 +36,35 @@ def set_contract_addresses(addresses):
     current_app.config['DATATRUST_CONTRACT_ADDRESS'] = addresses['datatrust']
     current_app.config['LISTING_CONTRACT_ADDRESS'] = addresses['listing']
 
+def get_voting():
+    v = Voting(g.w3.eth.defaultAccount)
+    v.at(g.w3, current_app.config['VOTING_CONTRACT_ADDRESS'])
+    return v
+
+def get_datatrust():
+    d = Datatrust(g.w3.eth.defaultAccount)
+    d.at(g.w3, current_app.config['DATATRUST_CONTRACT_ADDRESS'])
+    return d
+
+def get_listing():
+    l = Listing(g.w3.eth.defaultAccount)
+    l.at(g.w3, current_app.config['LISTING_CONTRACT_ADDRESS'])
+    return l
+
+def get_backend_address():
+    d = get_datatrust()
+    address = call(d.get_backend_address())
+    return address
+
+def get_backend_url():
+    d = get_datatrust()
+    url = call(d.get_backend_url())
+    return url
+
 def is_registered():
     """
-    Check that this API is registered as the datatrust for a given market.
-    If so, proceed normally. If not, intercept the request then:
-    * Call to register if not already a registration candidate
-    * Resolve any closed registration poll if appropriate
-    * Return a message relating the status
+    Check that this API is registered as the datatrust for a given market by
+    comparing the on-chain backend address with this API's wallet addr
     """
-    pass
+    address = get_backend_address()
+    return address == current_app.config['API_PUBLIC_KEY']

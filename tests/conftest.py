@@ -4,7 +4,7 @@ from flask import current_app
 import pytest
 from app import app
 from web3 import Web3
-from protocol import set_w3, set_contract_addresses
+from core.protocol import set_w3, set_contract_addresses
 import computable # we use this to get the path to the contract abi/bin in the installed lib (rather than copy/paste them)
 from computable.contracts import EtherToken
 from computable.contracts import MarketToken

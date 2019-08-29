@@ -1,9 +1,8 @@
 from flask import Flask
-from app.listing import listing
-from app.voting import voting
-from protocol import set_w3
+from apis import api
+from core.protocol import set_w3
 
-# config
+# create and config the app
 app = Flask(__name__, instance_relative_config=True)
 # default first
 app.config.from_object('config.default')
@@ -12,11 +11,11 @@ app.config.from_pyfile('config.py')
 # whatever the makefile says...
 app.config.from_envvar('ENV_CONFIG_FILE')
 
-# blueprints
-app.register_blueprint(listing, url_prefix='/listings')
-app.register_blueprint(voting, url_prefix='/candidates')
+# init the api and its namespaces
+api.init_app(app)
 
-# getters and setters alike must have a global w3 instance available
+# setup any global before-request type calls
+# NOTE if restplus gets these per-namespace -> move them. currently not avail...
 @app.before_request
 def set_w3_before_request():
     set_w3()

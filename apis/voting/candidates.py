@@ -1,24 +1,16 @@
-"""
-Blueprint for the API endpoints pertaining to the Voting contract
-NOTE: Registered with the url_prefix '/candidates'
-"""
-from flask import Blueprint, g
-from flask_restplus import Api, Resource, reqparse
-import app.constants as C
-from .helpers import filter_candidate_added
+from flask import g
+from flask_restplus import Namespace, Resource
 from .parsers import req_parser, parse_candidates, parse_candidates_by_kind
+from .helpers import filter_candidate_added
 
-voting = Blueprint('voting', __name__)
-
-api = Api(voting, default='candidates', doc='/documentation',
-    title=C.TITLE, version=C.VERSION, description='API abstractions pertaining to the Computable Voting contract')
+api = Namespace('Candidates', description='Operations pertaining to the Computable Protocol Candidate Object')
 
 @api.route('/', methods=['GET'])
 @api.expect(req_parser)
-class Candidates(Resource):
+class CandidatesRoute(Resource):
     def get(self):
         """
-        Fetch and return all candidates posted from [from_block || 0] until latest.
+        Fetch and return all candidates, optionally filtered from a given block number.
         """
         # TODO implement paging?
 
@@ -41,10 +33,10 @@ class Candidates(Resource):
 @api.route('/<string:type>', methods=['GET'])
 @api.expect(req_parser)
 @api.doc(params={'type': 'One of the Voting Contract Candidate kinds [application, challenge, reparam, registration]'})
-class CandidatesByKind(Resource):
+class CandidatesByKindRoute(Resource):
     def get(self, type):
         """
-        Fetch and return all candidates posted from [from_block || 0] until latest of a given kind.
+        Fetch and return all candidates of the given kind, optionally filtered from a given block number.
         """
         # TODO implement paging?
 
