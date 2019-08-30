@@ -4,7 +4,9 @@ from flask import current_app
 import pytest
 from app import app
 from web3 import Web3
-from core.protocol import set_w3, set_contract_addresses
+from core.protocol import set_w3
+from core.dynamo import set_dynamo_table
+from moto import mock_dynamodb
 import computable # we use this to get the path to the contract abi/bin in the installed lib (rather than copy/paste them)
 from computable.contracts import EtherToken
 from computable.contracts import MarketToken
@@ -188,23 +190,19 @@ def datatrust(w3, datatrust_pre, listing):
     tx_rcpt = w3.eth.waitForTransactionReceipt(tx_hash)
     return datatrust_pre
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def ctx(w3, ether_token, voting, datatrust, listing):
     ctx = app.app_context()
     ctx.push()
     with ctx:
-        addresses = dict(
-            ether_token=ether_token.address,
-            voting=voting.address,
-            datatrust=datatrust.address,
-            listing=listing.address,
-            )
-
+        current_app.config['ETHER_TOKEN_CONTRACT_ADDRESS'] = ether_token.address
+        current_app.config['VOTING_CONTRACT_ADDRESS'] = voting.address
+        current_app.config['DATATRUST_CONTRACT_ADDRESS'] = datatrust.address
+        current_app.config['LISTING_CONTRACT_ADDRESS'] = listing.address
         set_w3(w3)
-        set_contract_addresses(addresses)
         yield ctx
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function')
 def test_client(w3, ether_token, voting, datatrust, listing, ctx):
     """
     The App setup and Flask client for testing
@@ -212,3 +210,27 @@ def test_client(w3, ether_token, voting, datatrust, listing, ctx):
     with ctx:
         with current_app.test_client() as client:
             yield client
+
+@pytest.fixture(scope='function')
+def aws_creds():
+    """
+    mock the os level creds for moto
+    """
+    os.environ['AWS_ACCESS_KEY_ID'] = 'testing'
+    os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
+    os.environ['AWS_SECURITY_TOKEN'] = 'testing'
+    os.environ['AWS_SESSION_TOKEN'] = 'testing'
+    yield os.environ
+
+@pytest.fixture(scope='function')
+def dynamo(aws_creds, ctx):
+    with aws_creds:
+        with ctx:
+            with mock_dynamodb():
+                yield boto3.resource('dynamodb', current_app.config['REGION'])
+
+@pytest.fixture(scope='function')
+def dynamo_table(aws_creds, ctx, dynamo):
+    with aws_creds:
+        with ctx:
+            set_dynamo_table(dynamo)

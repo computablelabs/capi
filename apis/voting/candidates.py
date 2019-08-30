@@ -2,6 +2,7 @@ from flask import g
 from flask_restplus import Namespace, Resource
 from .parsers import req_parser, parse_candidates, parse_candidates_by_kind
 from .helpers import filter_candidate_added
+from core.dynamo import get_listings
 
 api = Namespace('Candidates', description='Operations pertaining to the Computable Protocol Candidate Object')
 
@@ -16,18 +17,22 @@ class CandidatesRoute(Resource):
 
         args = parse_candidates(req_parser.parse_args())
 
-        # protocol stuff... TODO handle blockchain reverts
+        # TODO handle blockchain reverts
         events = filter_candidate_added(args['from_block'], args['filters'])
         hashes = []
         to_block = 0
 
         for event in events:
-            # TODO dynamo stuff
             hashes.append(g.w3.toHex(event['args']['hash'])) # byte array not json serializable, convert it
             to_block = max(to_block, event['blockNumber'])
 
+        # to dynamo a candidate and a listing are the same thing...
+        everything = get_listings()
+
+        # now filter everything by the actual hashes...
+
         # TODO marshalling
-        return {'items': hashes, 'from_block': args['from_block'], 'to_block': to_block}, 200
+        return {'hashes': hashes, 'listings': everything, 'from_block': args['from_block'], 'to_block': to_block}, 200
 
 # NOTE: We have to use 'type' interchangeably with 'kind' cuz reserved keyword fail...
 @api.route('/<string:type>', methods=['GET'])

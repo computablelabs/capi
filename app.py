@@ -1,6 +1,7 @@
 from flask import Flask
 from apis import api
 from core.protocol import set_w3
+from core.dynamo import set_dynamo_table
 
 # create and config the app
 app = Flask(__name__, instance_relative_config=True)
@@ -17,5 +18,6 @@ api.init_app(app)
 # setup any global before-request type calls
 # NOTE if restplus gets these per-namespace -> move them. currently not avail...
 @app.before_request
-def set_w3_before_request():
+def set_w3_and_dynamo_table():
     set_w3()
+    set_dynamo_table()
