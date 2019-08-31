@@ -5,8 +5,9 @@ from flask import request, g
 from flask_restplus import Namespace, Resource
 from core import constants as C
 from core.protocol import is_registered
+from apis.serializers import Listing, Listings
+from .serializers import NewListing
 from .parsers import listing_parser, listings_parser, parse_listings
-from .serializers import Listing, Listings, NewListing
 from .helpers import filter_listed
 
 api = Namespace('Listings', description='Operations pertaining to the Computable Protocol Listing Object')
