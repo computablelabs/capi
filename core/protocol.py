@@ -21,7 +21,7 @@ def set_w3(w3=None):
         else:
             provider = Web3.HTTPProvider(current_app.config['RPC_PATH'])
             g.w3 = Web3(provider)
-            g.w3.eth.defaultAccount = current_app.config['API_PUBLIC_KEY']
+            g.w3.eth.defaultAccount = current_app.config['PUBLIC_KEY']
             # If in DEV mode, setup w3 to talk to SKYNET POA
             if current_app.config['DEVELOPMENT'] == True:
                 g.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
@@ -57,4 +57,4 @@ def is_registered():
     comparing the on-chain backend address with this API's wallet addr
     """
     address = get_backend_address()
-    return address == current_app.config['API_PUBLIC_KEY']
+    return address == current_app.config['PUBLIC_KEY']

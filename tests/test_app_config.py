@@ -4,7 +4,6 @@ import pytest
 def test_config(ether_token, voting, datatrust, listing, ctx):
     assert current_app.config['TESTING'] == True
     assert current_app.config['DEBUG'] == True
-    assert current_app.config['SECRET_KEY'] == 'Th1s1sS0meS3cr3tSh1tR1ghtH3r3'
 
     assert current_app.config['ETHER_TOKEN_CONTRACT_ADDRESS'] == ether_token.address
     assert current_app.config['VOTING_CONTRACT_ADDRESS'] == voting.address

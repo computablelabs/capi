@@ -2,11 +2,12 @@ import os
 import json
 from flask import current_app
 import pytest
+import boto3
 from app import app
 from web3 import Web3
 from core.protocol import set_w3
 from core.dynamo import set_dynamo_table
-from moto import mock_dynamodb
+from moto import mock_dynamodb2
 import computable # we use this to get the path to the contract abi/bin in the installed lib (rather than copy/paste them)
 from computable.contracts import EtherToken
 from computable.contracts import MarketToken
@@ -193,23 +194,21 @@ def datatrust(w3, datatrust_pre, listing):
 @pytest.fixture(scope='function')
 def ctx(w3, ether_token, voting, datatrust, listing):
     ctx = app.app_context()
-    ctx.push()
-    with ctx:
-        current_app.config['ETHER_TOKEN_CONTRACT_ADDRESS'] = ether_token.address
-        current_app.config['VOTING_CONTRACT_ADDRESS'] = voting.address
-        current_app.config['DATATRUST_CONTRACT_ADDRESS'] = datatrust.address
-        current_app.config['LISTING_CONTRACT_ADDRESS'] = listing.address
-        set_w3(w3)
-        yield ctx
+    ctx.push() # current_app and g now are present
+
+    current_app.config['ETHER_TOKEN_CONTRACT_ADDRESS'] = ether_token.address
+    current_app.config['VOTING_CONTRACT_ADDRESS'] = voting.address
+    current_app.config['DATATRUST_CONTRACT_ADDRESS'] = datatrust.address
+    current_app.config['LISTING_CONTRACT_ADDRESS'] = listing.address
+    set_w3(w3)
 
 @pytest.fixture(scope='function')
 def test_client(w3, ether_token, voting, datatrust, listing, ctx):
     """
     The App setup and Flask client for testing
     """
-    with ctx:
-        with current_app.test_client() as client:
-            yield client
+    with current_app.test_client() as client:
+        yield client
 
 @pytest.fixture(scope='function')
 def aws_creds():
@@ -220,17 +219,34 @@ def aws_creds():
     os.environ['AWS_SECRET_ACCESS_KEY'] = 'testing'
     os.environ['AWS_SECURITY_TOKEN'] = 'testing'
     os.environ['AWS_SESSION_TOKEN'] = 'testing'
-    yield os.environ
 
 @pytest.fixture(scope='function')
 def dynamo(aws_creds, ctx):
-    with aws_creds:
-        with ctx:
-            with mock_dynamodb():
-                yield boto3.resource('dynamodb', current_app.config['REGION'])
+    with mock_dynamodb2():
+        db = boto3.resource('dynamodb', current_app.config['REGION'])
+        yield db
 
 @pytest.fixture(scope='function')
-def dynamo_table(aws_creds, ctx, dynamo):
-    with aws_creds:
-        with ctx:
-            set_dynamo_table(dynamo)
+def create_dynamo_table(aws_creds, ctx, dynamo):
+    """
+    We have to create the listings table to simulate the staging env
+    """
+    t = dynamo.create_table(
+        TableName=current_app.config['TABLE_NAME'],
+        KeySchema=[{
+            'AttributeName': 'listing_hash',
+            'KeyType': 'HASH'
+            }],
+        AttributeDefinitions=[{
+            'AttributeName': 'listing_hash',
+            'AttributeType': 'S'
+            }],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 10,
+            'WriteCapacityUnits': 10
+            }
+        )
+
+@pytest.fixture(scope='function')
+def dynamo_table(aws_creds, ctx, dynamo, create_dynamo_table):
+    set_dynamo_table(dynamo)

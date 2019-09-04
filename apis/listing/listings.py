@@ -6,9 +6,11 @@ from flask_restplus import Namespace, Resource
 from core import constants as C
 from core.protocol import is_registered
 from apis.serializers import Listing, Listings
+from apis.parsers import from_block_owner, parse_from_block_owner
 from .serializers import NewListing
-from .parsers import listing_parser, listings_parser, parse_listings
+from .parsers import listing_parser
 from .helpers import filter_listed
+from core.dynamo import get_listings
 
 api = Namespace('Listings', description='Operations pertaining to the Computable Protocol Listing Object')
 
@@ -18,27 +20,19 @@ api.models['NewListing'] = NewListing
 
 @api.route('/')
 class ListingsRoute(Resource):
-    @api.expect(listings_parser)
+    @api.expect(from_block_owner)
     @api.marshal_with(Listings)
     def get(self):
         """
         Fetch and return all listings, optionally filtered from a given block number.
         """
         # TODO implement paging
-
-        args = parse_listings(listings_parser.parse_args())
-
+        args = parse_from_block_owner(listings_parser.parse_args())
         # protocol stuff... TODO handle blockchain reverts
         events = filter_listed(args['from_block'], args['filters'])
-        hashes = []
-        tb = 0
-
-        for event in events:
-            hashes.append(g.w3.toHex(event['args']['hash'])) # byte array not json serializable, convert it
-            tb = max(to_block, event['blockNumber'])
-
-        # TODO now fetch dynamo items with the hashes
-        it = []
+        # TODO any filtering for dynamo?
+        everything = get_listings()
+        it, tb = listing_hash_join(events, everything)
 
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
 
