@@ -56,10 +56,14 @@ class ListingsRoute(Resource):
         else:
             payload = self.get_payload()
             file_item = request.files.items()
+            # TODO contents = self.upload_to_s3...
             self.upload_to_s3(file_item[1], payload['listing_hash'])
             name = self.get_filename()
             payload['filename'] = name if name else file_item[0]
 
+            # TODO use tx_hash to wait for mining so that we can call datatrust.set_data_hash
+            # async -> g.w3.waitForTransactionReceipt... NOTE set timeout to ?
+            # TODO what happens if it doesn't
     def get_payload(self):
         """
         """
@@ -107,5 +111,6 @@ class ListingsRoute(Resource):
             if our_md5 != their_md5:
                 api.abort(500, (C.SERVER_ERROR % 'file upload failed'))
 
+            # TODO g.s3...
             s3 = boto3.client('s3')
             s3.upload_fileobj(data, current_app.config['S3_DESTINATION'], listing_hash)
