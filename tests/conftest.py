@@ -163,8 +163,9 @@ def listing(w3, market_token_pre, voting_pre, parameterizer, datatrust_pre, rese
     with open(os.path.join(contract_path, 'listing', 'listing.bin')) as f:
         bc = f.read()
     deployed = w3.eth.contract(abi=abi, bytecode=bc.rstrip('\n'))
+    # TODO this will need updating when contracts are updated
     tx_hash = deployed.constructor(market_token_pre.address, voting_pre.address,
-            parameterizer.address, datatrust_pre.address, reserve.address).transact()
+            parameterizer.address, reserve.address, datatrust_pre.address).transact()
     tx_rcpt = w3.eth.waitForTransactionReceipt(tx_hash)
     instance = Listing(w3.eth.defaultAccount)
     instance.at(w3, tx_rcpt['contractAddress'])
