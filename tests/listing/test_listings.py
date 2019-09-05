@@ -1,13 +1,13 @@
 import json
 import pytest
-from flask import current_app
+from flask import current_app, g
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval, time_travel
 
 # OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,3]
 
-def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, datatrust, ctx):
+def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, datatrust):
     dt = w3.eth.accounts[3]
     tx = transact(datatrust.register(current_app.config['DNS_NAME'], {'from': dt, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     rct = w3.eth.waitForTransactionReceipt(tx)
@@ -51,7 +51,7 @@ def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, data
     addr = call(datatrust.get_backend_address())
     assert addr == dt
 
-def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, listing, ctx, test_client):
+def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, listing, test_client, dynamo_table):
     # needs to be a candidate first...
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='testytest123')
@@ -101,19 +101,28 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     poll_closed = call(voting.poll_closed(listing_hash))
     assert poll_closed == True
 
-    res_tx = transact(listing.resolve_application(listing_hash, {'gas': 2000000, 'gasPrice': w3.toWei(2, 'gwei')}))
+    res_tx = transact(listing.resolve_application(listing_hash, {'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     res_rct = w3.eth.waitForTransactionReceipt(res_tx)
 
     # should be listed
-    # is_listed = call(listing.is_listed(listing_hash))
-    # assert is_listed == True
+    is_listed = call(listing.is_listed(listing_hash))
+    assert is_listed == True
 
     #  logs = listing.deployed.events.ApplicationFailed().processReceipt(res_rct)
     #  print(logs)
 
-    #  listings = test_client.get('/listings/')
-    #  payload = json.loads(candidates.data)
-    #  assert candidates.status_code == 200
-    #  assert payload['from_block'] == 0
-    #  assert payload['items'][0] == w3.toHex(listing_hash) # payload hashes are hex
-    #  assert payload['to_block'] > 0
+    # must exist in the dynamo table
+    row = {
+            'listing_hash': w3.toHex(listing_hash),
+            'title': 'lol catz 9000'
+        }
+
+    g.table.put_item(Item=row)
+
+    listings = test_client.get('/listings/')
+    payload = json.loads(listings.data)
+    assert listings.status_code == 200
+    assert payload['from_block'] == 0
+    assert payload['items'][0]['listing_hash'] == w3.toHex(listing_hash) # payload hashes are hex
+    assert payload['items'][0]['title'] == 'lol catz 9000'
+    assert payload['to_block'] > 0

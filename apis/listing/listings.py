@@ -7,6 +7,7 @@ from core import constants as C
 from core.protocol import is_registered
 from apis.serializers import Listing, Listings
 from apis.parsers import from_block_owner, parse_from_block_owner
+from apis.helpers import listing_hash_join
 from .serializers import NewListing
 from .parsers import listing_parser
 from .helpers import filter_listed
@@ -27,7 +28,7 @@ class ListingsRoute(Resource):
         Fetch and return all listings, optionally filtered from a given block number.
         """
         # TODO implement paging
-        args = parse_from_block_owner(listings_parser.parse_args())
+        args = parse_from_block_owner(from_block_owner.parse_args())
         # protocol stuff... TODO handle blockchain reverts
         events = filter_listed(args['from_block'], args['filters'])
         # TODO any filtering for dynamo?
