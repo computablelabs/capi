@@ -1,8 +1,18 @@
 language: python
+services:
+  - docker
 python:
   - "3.6"
+before_install:
+  - pip install awscli
+  - pip install boto3
 install:
   - pip install -r requirements.txt
   - pip install -U web3[tester]
 script:
   - make test
+deploy:
+  provider: script
+  script: bash scripts/deploy.sh
+  on:
+    branch: v3
