@@ -4,7 +4,7 @@
 docker build -t "capi:latest" .
 docker tag "capi:latest" "$REPO_URI:capi" #TODO: change to REPO_URI:latest prior to merging
 docker tag "capi:latest" "$REPO_URI:$TRAVIS_COMMIT"
-$(aws ecr get-login --no-include-email)
+$(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
 echo "pushing $REPO_URI:capi to ECR"
 docker push "$REPO_URI:capi" #TODO: change to REPO_URI:latest prior to merging
 docker push "$REPO_URI:$TRAVIS_COMMIT"
