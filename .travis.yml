@@ -15,4 +15,4 @@ deploy:
   provider: script
   script: bash scripts/deploy.sh
   on:
-    branch: docker-deploy
+    branch: v3
