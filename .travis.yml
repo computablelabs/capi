@@ -14,4 +14,4 @@ deploy:
   provider: script
   script: bash scripts/deploy.sh
   on:
-    branch: v3
+    branch: docker-deploy
