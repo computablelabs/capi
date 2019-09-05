@@ -9,4 +9,4 @@ docker push "$REPO_URI:capi" #TODO: change to REPO_URI:latest prior to merging
 docker push "$REPO_URI:$TRAVIS_COMMIT"
 
 # Force deploy service to pick up new docker image & wait for success
-python restart_service.py $CLUSTER $SERVICE
+python scripts/restart_service.py $CLUSTER $SERVICE
