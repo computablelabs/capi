@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 # Build and tag docker image
 docker build -t "capi:latest" .
