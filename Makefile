@@ -13,4 +13,8 @@ local_docker:
 		--build-arg secretkey=$(shell aws configure get aws_secret_access_key)
 
 register_development:
-	ENV_CONFIG_FILE=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))config/development.py FLASK_APP=run.py flask admin register
+ifdef gas_price
+	ENV_CONFIG_FILE=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))config/development.py FLASK_APP=run.py flask admin register --gas_price=$(gas_price)
+else
+		ENV_CONFIG_FILE=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))config/development.py FLASK_APP=run.py flask admin register
+endif

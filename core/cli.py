@@ -13,13 +13,13 @@ admin = Blueprint('admin', __name__)
 # NOTE when testing pass `with_appconext=False` as a 2nd arg
 @admin.cli.command('registration_test', with_appcontext=False)
 # We will default an omitted gas price to 2 gwei TODO set something else?
-@click.option('--gas_price', default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')
+@click.option('--gas_price', type=int, default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')
 def test(gas_price):
     do_register(gas_price)
 
 
 @admin.cli.command('register')
-@click.option('--gas_price', default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')
+@click.option('--gas_price', type=int, default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')
 def real(gas_price):
     do_register(gas_price)
 
