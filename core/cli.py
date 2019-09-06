@@ -26,9 +26,9 @@ def real(gas_price):
 def do_register(gas_price):
     """
     register as this market's datatrust
-    NOTE: we are assuming you have checked that
-    1. is_registered == False (via /status)
-    2. any previous registration candidate (can be checked via /candidates/registration), if present, has been resolved (via resolve_registration)
+    NOTE: we are assuming you have checked that any previous registration
+    candidate (can be checked via /candidates/registration), if present,
+    has been resolved (via resolve_registration --tbd)
     """
 
     # set_w3 by hand as this is not in a request cycle
