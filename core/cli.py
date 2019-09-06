@@ -1,53 +1,55 @@
 """
 Blueprint containing the 'admin' CLI for datatrust operators
 """
+import click
 from flask import Blueprint
 from flask import current_app, g
-from .protocol import set_w3, get_datatrust
+from .protocol import set_w3, get_datatrust, is_registered
 from .helpers import set_gas_prices
+import core.constants as C # TODO why can't i use .constants?
 from computable.helpers.transaction import call, transact, send
 
 admin = Blueprint('admin', __name__)
+# NOTE when testing pass `with_appconext=False` as a 2nd arg
+@admin.cli.command('registration_test', with_appcontext=False)
+# We will default an omitted gas price to 2 gwei TODO set something else?
+@click.option('--gas_price', default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')
+def test(gas_price):
+    do_register(gas_price)
+
 
 @admin.cli.command('register')
-@click.argument('gas_price')
-def register(gas_price):
+@click.option('--gas_price', default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')
+def real(gas_price):
+    do_register(gas_price)
+
+def do_register(gas_price):
     """
     register as this market's datatrust
+    NOTE: we are assuming you have checked that
+    1. is_registered == False (via /status)
+    2. any previous registration candidate (can be checked via /candidates/registration), if present, has been resolved (via resolve_registration)
     """
+
     # set_w3 by hand as this is not in a request cycle
     set_w3()
-    dt = get_datatrust()
-    # comp.py HOC methods produce a tuple -> (tx, opts)
-    t = dt.register(current_app.config['DNS_NAME'])
-    # we use an abstracted helper to estimate gas, and set the given gas price
-    args = set_gas_prices(t, gas_price) # omit gas arg and it will be estimated
-    # TEST env never need use send...
-    if current_app.config['TESTING'] == True:
-        tx = transact(args)
+
+    if is_registered() == True:
+        click.echo(C.REGISTERED)
     else:
-        tx = send(g.w3, current_app.config['PRIVATE_KEY'], args)
+        dt = get_datatrust()
+        # comp.py HOC methods produce a tuple -> (tx, opts)
+        t = dt.register(current_app.config['DNS_NAME'])
+        # we use an abstracted helper to estimate gas, and set the given gas price
+        args = set_gas_prices(t, gas_price) # omit gas arg and it will be estimated
+        # TEST env never need use send...
+        if current_app.config['TESTING'] == True:
+            tx = transact(args)
+        else:
+            tx = send(g.w3, current_app.config['PRIVATE_KEY'], args)
 
-    rct = g.w3.waitForTransactionReceipt(tx)
-    return rct
+        rct = g.w3.eth.waitForTransactionReceipt(tx)
+        # TODO if the receipt is wanted we could output it...
+        # click.echo(rct)
 
-@admin.cli.command('get_candidate')
-def get_candidate():
-    """
-    fetch the voting client for this datatrust's registration
-    """
-    pass
-
-@admin.cli.command('resolve_registration')
-def resolve_registration():
-    """
-    if the registration candidacy period has ended, and no one else has, resolve said candidate
-    """
-    pass
-
-@admin.cli.command('withdraw')
-def withdraw():
-    """
-    transfer any funds from the ethertoken owed to the datatrust owner
-    """
-    pass
+        click.echo(C.REGISTERED_CANDIDATE)

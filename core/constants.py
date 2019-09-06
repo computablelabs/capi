@@ -22,3 +22,5 @@ ITEM_NOT_FOUND = 'No results returned'
 DB_ERROR = 'Operation failed due to database read/write error'
 # Protocol related messages
 NOT_REGISTERED = 'This API is not currently the registered datatrust'
+REGISTERED = 'This API is currently the registered datatrust'
+REGISTERED_CANDIDATE = 'This API is an active candidate for datatrust'

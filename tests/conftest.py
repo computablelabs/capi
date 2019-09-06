@@ -201,10 +201,11 @@ def ctx(w3, ether_token, voting, datatrust, listing):
     current_app.config['VOTING_CONTRACT_ADDRESS'] = voting.address
     current_app.config['DATATRUST_CONTRACT_ADDRESS'] = datatrust.address
     current_app.config['LISTING_CONTRACT_ADDRESS'] = listing.address
+    current_app.config['PUBLIC_KEY'] = w3.eth.defaultAccount
     set_w3(w3)
 
 @pytest.fixture(scope='function')
-def test_client(w3, ether_token, voting, datatrust, listing, ctx):
+def test_client(ctx):
     """
     The App setup and Flask client for testing
     """
