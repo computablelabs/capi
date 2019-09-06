@@ -16,5 +16,5 @@ register_development:
 ifdef gas_price
 	ENV_CONFIG_FILE=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))config/development.py FLASK_APP=run.py flask admin register --gas_price=$(gas_price)
 else
-		ENV_CONFIG_FILE=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))config/development.py FLASK_APP=run.py flask admin register
+	ENV_CONFIG_FILE=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))config/development.py FLASK_APP=run.py flask admin register
 endif
