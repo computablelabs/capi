@@ -126,3 +126,7 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert payload['items'][0]['listing_hash'] == w3.toHex(listing_hash) # payload hashes are hex
     assert payload['items'][0]['title'] == 'lol catz 9000'
     assert payload['to_block'] > 0
+
+def test_post_listings(listing, test_client):
+    listing = test_client.post('/listings/')
+    assert listing.status_code == 201
