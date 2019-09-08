@@ -1,3 +1,4 @@
+from io import BytesIO
 import json
 import pytest
 from flask import current_app, g
@@ -127,6 +128,16 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert payload['items'][0]['title'] == 'lol catz 9000'
     assert payload['to_block'] > 0
 
-def test_post_listings(listing, test_client):
-    listing = test_client.post('/listings/')
+def test_post_listings(w3, voting, datatrust, listing, test_client, s3_client):
+    listing = test_client.post('/listings/', 
+    content_type='multipart/form-data',
+    data=dict(
+        tx_hash='1234',
+        title='My Bestest Pony',
+        license='MIT',
+        file_type='gif',
+        md5_sum='7f7c47e44b125f2944cb0879cbe428ce',
+        listing_hash='1234',
+        file=(BytesIO(b'a pony'), 'my_little_pony.gif')
+    ))
     assert listing.status_code == 201

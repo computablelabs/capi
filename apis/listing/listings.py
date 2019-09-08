@@ -1,7 +1,7 @@
 import os
 import hashlib
 import boto3
-from flask import request, g
+from flask import request, g, current_app
 from flask_restplus import Namespace, Resource
 from core import constants as C
 from core.protocol import is_registered
@@ -57,14 +57,17 @@ class ListingsRoute(Resource):
         else:
             payload = self.get_payload()
             file_item = request.files.items()
-            # TODO contents = self.upload_to_s3...
-            self.upload_to_s3(file_item[1], payload['listing_hash'])
-            name = self.get_filename()
-            payload['filename'] = name if name else file_item[0]
+            for idx, item in enumerate(request.files.items()):
+                # TODO contents = self.upload_to_s3...
+                self.upload_to_s3(item[1], payload['listing_hash'])
+                name = self.get_filename()
+                payload['filename'] = name if name else item[0]
 
             # TODO use tx_hash to wait for mining so that we can call datatrust.set_data_hash
             # async -> g.w3.waitForTransactionReceipt... NOTE set timeout to ?
             # TODO what happens if it doesn't
+        return {'message': C.NEW_LISTING_SUCCESS}, 201
+
     def get_payload(self):
         """
         """
@@ -89,8 +92,8 @@ class ListingsRoute(Resource):
         names = request.form.get('filenames')
         if names:
             filenames = names.split(',')
-
-        return filenames[0] if filenames[0] else None
+            return filenames[0] if filenames[0] else None
+        return None
 
     def upload_to_s3(self, item, listing_hash):
         """
@@ -112,6 +115,4 @@ class ListingsRoute(Resource):
             if our_md5 != their_md5:
                 api.abort(500, (C.SERVER_ERROR % 'file upload failed'))
 
-            # TODO g.s3...
-            s3 = boto3.client('s3')
-            s3.upload_fileobj(data, current_app.config['S3_DESTINATION'], listing_hash)
+            g.s3.upload_fileobj(data, current_app.config['S3_DESTINATION'], listing_hash)
