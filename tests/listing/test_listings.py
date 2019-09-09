@@ -141,3 +141,10 @@ def test_post_listings(w3, voting, datatrust, listing, test_client, s3_client):
         file=(BytesIO(b'a pony'), 'my_little_pony.gif')
     ))
     assert listing.status_code == 201
+    
+    uploaded_file = g.s3.get_object(
+        Bucket=current_app.config['S3_DESTINATION'],
+        Key='1234'
+    )['Body'].read().decode()
+    assert uploaded_file == 'a pony'
+    #TODO: add celery task to set data hash

@@ -4,6 +4,7 @@ import boto3
 from flask import request, g, current_app
 from flask_restplus import Namespace, Resource
 from core import constants as C
+from core.celery import send_hash_after_mining
 from core.protocol import is_registered
 from apis.serializers import Listing, Listings
 from apis.parsers import from_block_owner, parse_from_block_owner
@@ -59,13 +60,25 @@ class ListingsRoute(Resource):
             file_item = request.files.items()
             for idx, item in enumerate(request.files.items()):
                 # TODO contents = self.upload_to_s3...
-                self.upload_to_s3(item[1], payload['listing_hash'])
+                dest = os.path.join('/tmp/uploads/')
+
+                if not os.path.exists(dest):
+                    os.makedirs(dest)
+
+                loc = f'{dest}{payload["listing_hash"]}'
+
+                item[1].save(loc)
+                self.upload_to_s3(payload['listing_hash'], loc)
                 name = self.get_filename()
                 payload['filename'] = name if name else item[0]
 
             # TODO use tx_hash to wait for mining so that we can call datatrust.set_data_hash
             # async -> g.w3.waitForTransactionReceipt... NOTE set timeout to ?
+            keccak = self.get_keccak(loc)
+            # TODO: .delay() send_hash_after_mining once celery is implemented
+            send_hash_after_mining(payload['listing_hash'], keccak)
             # TODO what happens if it doesn't
+            os.remove(loc)
         return {'message': C.NEW_LISTING_SUCCESS}, 201
 
     def get_payload(self):
@@ -95,24 +108,29 @@ class ListingsRoute(Resource):
             return filenames[0] if filenames[0] else None
         return None
 
-    def upload_to_s3(self, item, listing_hash):
+    def upload_to_s3(self, listing_hash, location):
         """
         Upload file data to s3, keying it with the listing_hash
         """
         their_md5 = request.form.get('md5_sum')
-        dest = os.path.join('/tmp/uploads/')
 
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-
-        loc = f'{dest}{listing_hash}'
-
-        item.save(loc)
-
-        with open(loc, 'rb') as data:
+        # Read the file the first time to verify the md5 of the uploaded file
+        with open(location, 'rb') as data:
             contents = data.read()
             our_md5 = hashlib.md5(contents).hexdigest()
             if our_md5 != their_md5:
+                print('MD5 check failed')
                 api.abort(500, (C.SERVER_ERROR % 'file upload failed'))
 
-            g.s3.upload_fileobj(data, current_app.config['S3_DESTINATION'], listing_hash)
+        # Read the file a second time to upload to S3
+        with open(location, 'rb') as data:
+            res = g.s3.upload_fileobj(data, current_app.config['S3_DESTINATION'], listing_hash)
+
+    def get_keccak(self, location):
+        keccak_hash = None
+        with open(location, 'rb') as data:
+            b = data.read(1024*1024) # read file in 1MB chunks
+            while b:
+                keccak_hash = g.w3.keccak(b)
+                b = data.read(1024*1024)
+        return keccak_hash

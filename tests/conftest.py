@@ -204,6 +204,7 @@ def ctx(w3, ether_token, voting, datatrust, listing):
     current_app.config['LISTING_CONTRACT_ADDRESS'] = listing.address
     current_app.config['PUBLIC_KEY'] = w3.eth.accounts[3]
     current_app.config['S3_DESTINATION'] = 'Testy_McTestbucket'
+    current_app.config['CELERY_BROKER_URL'] = None
     set_w3(w3)
 
 @pytest.fixture(scope='function')

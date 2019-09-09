@@ -1,9 +1,11 @@
 from flask import Flask
 from apis import api
+from celery import Celery
 from core.protocol import set_w3
 from core.dynamo import set_dynamo_table
 from core.s3 import set_s3_client
 from core.cli import admin
+from core.celery import set_celery
 
 # create and config the app
 app = Flask(__name__, instance_relative_config=True)
@@ -21,7 +23,8 @@ app.register_blueprint(admin)
 # setup any global before-request type calls
 # NOTE if restplus gets these per-namespace -> move them. currently not avail...
 @app.before_request
-def set_w3_and_dynamo_table_and_s3():
+def set_w3_dynamo_table_s3_and_celery():
     set_w3()
     set_dynamo_table()
     set_s3_client()
+    set_celery()
