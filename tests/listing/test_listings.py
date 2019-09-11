@@ -2,9 +2,12 @@ from io import BytesIO
 import json
 import pytest
 from flask import current_app, g
+from core.celery import send_hash_after_mining
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval, time_travel
+from hexbytes import HexBytes
+from unittest import mock
 
 # OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,3]
 
@@ -128,23 +131,50 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert payload['items'][0]['title'] == 'lol catz 9000'
     assert payload['to_block'] > 0
 
-def test_post_listings(w3, voting, datatrust, listing, test_client, s3_client):
+@mock.patch('apis.listing.listings.ListingsRoute.send_hash')
+def test_post_listings(mock_hash_after_mining, w3, voting, datatrust, listing, test_client, s3_client):
+    # Create a listing to get tx_hash
+    maker = w3.eth.accounts[1]
+    listing_hash = w3.keccak(text='test_post_listing')
+    tx = transact(listing.list(listing_hash, {'from': maker, 'gas_price': w3.toWei(2, 'gwei'), 'gas': 1000000}))
+    
     listing = test_client.post('/listings/', 
     content_type='multipart/form-data',
     data=dict(
-        tx_hash='1234',
+        tx_hash=HexBytes(tx).hex(),
         title='My Bestest Pony',
         license='MIT',
         file_type='gif',
         md5_sum='7f7c47e44b125f2944cb0879cbe428ce',
-        listing_hash='1234',
+        listing_hash=HexBytes(listing_hash).hex(),
         file=(BytesIO(b'a pony'), 'my_little_pony.gif')
     ))
+    mock_hash_after_mining.assert_called_once_with(
+        HexBytes(tx).hex(),
+        HexBytes(listing_hash).hex(),
+        '0xadc113d55e8b7d4a4e132b1f24adcef15f4a4d011cb83b7e08d865538fd4bdf5'
+    )
     assert listing.status_code == 201
     
     uploaded_file = g.s3.get_object(
         Bucket=current_app.config['S3_DESTINATION'],
-        Key='1234'
+        Key=HexBytes(listing_hash).hex()
     )['Body'].read().decode()
     assert uploaded_file == 'a pony'
-    #TODO: add celery task to set data hash
+
+def test_send_hash_after_mining(w3, listing, datatrust, voting, test_client):
+    """
+    Test that the data hash is set for a completed listing candidate
+    """
+    # Create a listing candidate for testing
+    maker = w3.eth.accounts[1]
+    listing_hash = w3.keccak(text='test_hash_after_mining')
+    tx = transact(listing.list(listing_hash, {'from': maker, 'gas_price': w3.toWei(2, 'gwei'), 'gas': 1000000}))
+    data_hash = w3.keccak(text='test_data_hash')
+
+    # Use the celery task to set the data hash
+    hash_rcpt = send_hash_after_mining(tx, listing_hash, data_hash)
+
+    # Verify the data hash in the candidate from protocol
+    check_data_hash = HexBytes(datatrust.deployed.functions.getDataHash(listing_hash).call())
+    assert check_data_hash == data_hash

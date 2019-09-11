@@ -13,6 +13,7 @@ from .serializers import NewListing
 from .parsers import listing_parser
 from .helpers import filter_listed
 from core.dynamo import get_listings
+from hexbytes import HexBytes
 
 api = Namespace('Listings', description='Operations pertaining to the Computable Protocol Listing Object')
 
@@ -75,11 +76,21 @@ class ListingsRoute(Resource):
             # TODO use tx_hash to wait for mining so that we can call datatrust.set_data_hash
             # async -> g.w3.waitForTransactionReceipt... NOTE set timeout to ?
             keccak = self.get_keccak(loc)
-            # TODO: .delay() send_hash_after_mining once celery is implemented
-            send_hash_after_mining(payload['listing_hash'], keccak)
+            self.send_hash(
+                payload['tx_hash'], 
+                payload['listing_hash'], 
+                HexBytes(keccak).hex() # convert to string for JSON serialization in Celery
+            )
             # TODO what happens if it doesn't
             os.remove(loc)
         return {'message': C.NEW_LISTING_SUCCESS}, 201
+
+    def send_hash(self, tx_hash, listing_hash, keccak):
+        """
+        Set the data hash after confirming listing has been mined
+        NOTE: This is only here so that I can mock it for testing
+        """
+        send_hash_after_mining.delay(tx_hash, listing_hash, keccak)
 
     def get_payload(self):
         """
