@@ -7,7 +7,8 @@ from app import app
 from web3 import Web3
 from core.protocol import set_w3
 from core.dynamo import set_dynamo_table
-from moto import mock_dynamodb2
+from core.s3 import set_s3_client
+from moto import mock_dynamodb2, mock_s3
 import computable # we use this to get the path to the contract abi/bin in the installed lib (rather than copy/paste them)
 from computable.contracts import EtherToken
 from computable.contracts import MarketToken
@@ -202,6 +203,8 @@ def ctx(w3, ether_token, voting, datatrust, listing):
     current_app.config['DATATRUST_CONTRACT_ADDRESS'] = datatrust.address
     current_app.config['LISTING_CONTRACT_ADDRESS'] = listing.address
     current_app.config['PUBLIC_KEY'] = w3.eth.defaultAccount
+    current_app.config['S3_DESTINATION'] = 'Testy_McTestbucket'
+    current_app.config['CELERY_BROKER_URL'] = None
     set_w3(w3)
 
 @pytest.fixture(scope='function')
@@ -252,3 +255,17 @@ def create_dynamo_table(aws_creds, ctx, dynamo):
 @pytest.fixture(scope='function')
 def dynamo_table(aws_creds, ctx, dynamo, create_dynamo_table):
     set_dynamo_table(dynamo)
+
+@pytest.fixture(scope='function')
+def s3(aws_creds, ctx):
+    with mock_s3():
+        s3 = boto3.client('s3', region_name=current_app.config['REGION'])
+        yield s3
+
+@pytest.fixture(scope='function')
+def s3_bucket(ctx, s3):
+    s3.create_bucket(Bucket=current_app.config['S3_DESTINATION'])
+
+@pytest.fixture(scope='function')
+def s3_client(s3, s3_bucket):
+    set_s3_client(s3)
