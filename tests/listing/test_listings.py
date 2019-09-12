@@ -9,11 +9,10 @@ from tests.helpers import maybe_transfer_market_token, maybe_increase_market_tok
 from hexbytes import HexBytes
 from unittest import mock
 
-# OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,3]
+# OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,0]
 
 def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, datatrust):
-    dt = w3.eth.accounts[3]
-    tx = transact(datatrust.register(current_app.config['DNS_NAME'], {'from': dt, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
+    tx = transact(datatrust.register(current_app.config['DNS_NAME'], {'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     rct = w3.eth.waitForTransactionReceipt(tx)
 
     reg_hash = w3.keccak(text=current_app.config['DNS_NAME'])
@@ -53,7 +52,7 @@ def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, data
 
     # datatrust should be official
     addr = call(datatrust.get_backend_address())
-    assert addr == dt
+    assert addr == w3.eth.defaultAccount
 
 def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, listing, test_client, dynamo_table):
     # needs to be a candidate first...
@@ -69,10 +68,9 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert is_candidate == True
 
     # the registered datatrust needs to set the data hash
-    dt = w3.eth.accounts[3]
     data_hash = w3.keccak(text='datanadmoardata')
     dtx = transact(datatrust.set_data_hash(listing_hash, data_hash,
-        {'from': dt, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
+        {'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     drct = w3.eth.waitForTransactionReceipt(dtx)
     # the data hash must be set or the listing will fail
     # TODO computable.py needs to implement get_data_hash
@@ -137,7 +135,8 @@ def test_post_listings(mock_hash_after_mining, w3, voting, datatrust, listing, t
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='test_post_listing')
     tx = transact(listing.list(listing_hash, {'from': maker, 'gas_price': w3.toWei(2, 'gwei'), 'gas': 1000000}))
-    
+    rct = w3.eth.waitForTransactionReceipt(tx)
+
     listing = test_client.post('/listings/', 
     content_type='multipart/form-data',
     data=dict(
@@ -155,7 +154,7 @@ def test_post_listings(mock_hash_after_mining, w3, voting, datatrust, listing, t
         '0xadc113d55e8b7d4a4e132b1f24adcef15f4a4d011cb83b7e08d865538fd4bdf5'
     )
     assert listing.status_code == 201
-    
+
     uploaded_file = g.s3.get_object(
         Bucket=current_app.config['S3_DESTINATION'],
         Key=HexBytes(listing_hash).hex()
@@ -170,6 +169,8 @@ def test_send_hash_after_mining(w3, listing, datatrust, voting, test_client):
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='test_hash_after_mining')
     tx = transact(listing.list(listing_hash, {'from': maker, 'gas_price': w3.toWei(2, 'gwei'), 'gas': 1000000}))
+    rct = w3.eth.waitForTransactionReceipt(tx)
+
     data_hash = w3.keccak(text='test_data_hash')
 
     # Use the celery task to set the data hash
