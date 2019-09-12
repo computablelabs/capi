@@ -90,7 +90,7 @@ class ListingsRoute(Resource):
         Set the data hash after confirming listing has been mined
         NOTE: This is only here so that I can mock it for testing
         """
-        send_hash_after_mining.delay(tx_hash, listing_hash, keccak)
+        send_hash_after_mining(tx_hash, listing_hash, keccak)
 
     def get_payload(self):
         """
