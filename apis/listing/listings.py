@@ -60,7 +60,7 @@ class ListingsRoute(Resource):
             payload = self.get_payload()
             db_write = self.save_to_db(payload)
             file_item = request.files.items()
-            for idx, item in enumerate(request.files.items()):
+            for idx, item in enumerate(file_item):
                 # TODO contents = self.upload_to_s3...
                 dest = os.path.join('/tmp/uploads/')
 
