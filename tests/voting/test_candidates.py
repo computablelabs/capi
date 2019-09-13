@@ -44,5 +44,8 @@ def test_get_candidates_non_application(w3, voting, parameterizer, test_client):
     payload = json.loads(candidates.data)
     assert candidates.status_code == 200
     assert payload['from_block'] == 0
-    assert payload['items'][0] == w3.toHex(hash) # payload hashes are hex
+    # there are 2 candidates counting the applicaton above
+    assert len(payload['items']) == 2
+    # this reparam is the newest
+    assert payload['items'][1] == w3.toHex(hash) # payload hashes are hex
     assert payload['to_block'] > 0
