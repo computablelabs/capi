@@ -14,6 +14,6 @@ Listing = Model('Listing', {
 
 Listings = Model('Listings', {
     'items': fields.List(fields.Nested(Listing)),
-    'from_block': fields.Integer,
-    'to_block': fields.Integer
+    'from_block': fields.Integer(required=True, description='Block number where scanning began'),
+    'to_block': fields.Integer(required=True, description='Highest block number scanned')
     })
