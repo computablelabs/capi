@@ -6,6 +6,7 @@ from core.dynamo import set_dynamo_table
 from core.s3 import set_s3_client
 from core.cli import admin
 from core.celery import make_celery
+from flask_cors import CORS
 
 # create and config the app
 app = Flask(__name__, instance_relative_config=True)
@@ -26,6 +27,9 @@ app.config.update(
     CELERY_RESULT_BACKEND='redis://localhost:6379'
 )
 celery = make_celery(app)
+
+# Allow CORS
+CORS(app, origins='*')
 
 # setup any global before-request type calls
 # NOTE if restplus gets these per-namespace -> move them. currently not avail...
