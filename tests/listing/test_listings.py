@@ -130,24 +130,26 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert payload['to_block'] > 0
 
 @mock.patch('apis.listing.listings.ListingsRoute.send_hash')
-def test_post_listings(mock_hash_after_mining, w3, voting, datatrust, listing, test_client, s3_client):
+def test_post_listings(mock_hash_after_mining, w3, voting, datatrust, listing, test_client, s3_client, dynamo_table):
     # Create a listing to get tx_hash
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='test_post_listing')
     tx = transact(listing.list(listing_hash, {'from': maker, 'gas_price': w3.toWei(2, 'gwei'), 'gas': 1000000}))
     rct = w3.eth.waitForTransactionReceipt(tx)
 
+    test_payload = {
+        'tx_hash': HexBytes(tx).hex(),
+        'title': 'My Bestest Pony',
+        'license': 'MIT',
+        'file_type': 'gif',
+        'md5_sum': '7f7c47e44b125f2944cb0879cbe428ce',
+        'listing_hash': HexBytes(listing_hash).hex(),
+        'file': (BytesIO(b'a pony'), 'my_little_pony.gif')
+    }
+
     listing = test_client.post('/listings/', 
     content_type='multipart/form-data',
-    data=dict(
-        tx_hash=HexBytes(tx).hex(),
-        title='My Bestest Pony',
-        license='MIT',
-        file_type='gif',
-        md5_sum='7f7c47e44b125f2944cb0879cbe428ce',
-        listing_hash=HexBytes(listing_hash).hex(),
-        file=(BytesIO(b'a pony'), 'my_little_pony.gif')
-    ))
+    data=test_payload)
     mock_hash_after_mining.assert_called_once_with(
         HexBytes(tx).hex(),
         HexBytes(listing_hash).hex(),
@@ -160,6 +162,17 @@ def test_post_listings(mock_hash_after_mining, w3, voting, datatrust, listing, t
         Key=HexBytes(listing_hash).hex()
     )['Body'].read().decode()
     assert uploaded_file == 'a pony'
+
+    new_listing = g.table.get_item(
+        Key={
+            'listing_hash': HexBytes(listing_hash).hex()
+        }
+    )
+    assert new_listing['Item']['listing_hash'] == test_payload['listing_hash']
+    assert new_listing['Item']['title'] == test_payload['title']
+    assert new_listing['Item']['license'] == test_payload['license']
+    assert new_listing['Item']['file_type'] == test_payload['file_type']
+    assert new_listing['Item']['md5_sum'] == test_payload['md5_sum']
 
 def test_send_hash_after_mining(w3, listing, datatrust, voting, test_client):
     """

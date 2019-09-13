@@ -58,8 +58,9 @@ class ListingsRoute(Resource):
             api.abort(500, C.NOT_REGISTERED) # TODO different error code?
         else:
             payload = self.get_payload()
+            db_write = self.save_to_db(payload)
             file_item = request.files.items()
-            for idx, item in enumerate(request.files.items()):
+            for idx, item in enumerate(file_item):
                 # TODO contents = self.upload_to_s3...
                 dest = os.path.join('/tmp/uploads/')
 
@@ -83,7 +84,7 @@ class ListingsRoute(Resource):
             )
             # TODO what happens if it doesn't
             os.remove(loc)
-        return {'message': C.NEW_LISTING_SUCCESS}, 201
+            return {'message': C.NEW_LISTING_SUCCESS}, 201
 
     def send_hash(self, tx_hash, listing_hash, keccak):
         """
@@ -131,7 +132,7 @@ class ListingsRoute(Resource):
             our_md5 = hashlib.md5(contents).hexdigest()
             if our_md5 != their_md5:
                 print('MD5 check failed')
-                api.abort(500, (C.SERVER_ERROR % 'file upload failed'))
+                api.abort(400, (C.SERVER_ERROR % 'file upload failed'))
 
         # Read the file a second time to upload to S3
         with open(location, 'rb') as data:
@@ -145,3 +146,9 @@ class ListingsRoute(Resource):
                 keccak_hash = g.w3.keccak(b)
                 b = data.read(1024*1024)
         return keccak_hash
+
+    def save_to_db(self, payload):
+        response = g.table.put_item(
+            Item=payload
+        )
+        return response
