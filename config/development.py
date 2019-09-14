@@ -25,3 +25,6 @@ PRIVATE_KEY = secrets['DATATRUST_KEY']
 DNS_NAME = secrets['DNSName']
 CELERY_BROKER_URL = secrets['CELERY_BROKER_URL']
 CELERY_RESULT_BACKEND = secrets['CELERY_RESULT_BACKEND']
+if 'LOG_LEVEL' in secrets:
+    # Setting log leve in secrets allows changing log level without a code push
+    LOG_LEVEL = secrets['LOG_LEVEL']

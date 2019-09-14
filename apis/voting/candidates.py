@@ -1,4 +1,4 @@
-from flask import g
+from flask import g, current_app
 from flask_restplus import Namespace, Resource
 from apis.helpers import listing_hash_join
 from apis.serializers import Listing, Listings
@@ -27,9 +27,11 @@ class CandidatesRoute(Resource):
         events = filter_candidate_added(args['from_block'], args['filters'])
         # to dynamo a candidate and a listing are the same thing... TODO wut?
         everything = get_listings()
+        current_app.logger.debug('retrieved candidates from db')
         # now filter everything by the actual hashes...
         it, tb = listing_hash_join(events, everything)
 
+        current_app.logger.info(f'Returning candidates from block {args["from_block"]} to {tb}')
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
 
 # NOTE: We have to use 'type' interchangeably with 'kind' cuz reserved keyword fail...
@@ -48,7 +50,9 @@ class CandidatesByKindRoute(Resource):
         # TODO handle blockchain reverts
         events = filter_candidate_added(args['from_block'], args['filters'])
         everything = get_listings()
+        current_app.logger.debug('retrieved candidates from db')
         # now filter everything by the actual hashes...
         it, tb = listing_hash_join(events, everything)
 
+        current_app.logger.info(f'Returning candidates of type {type} from block {args["from_block"]} to {tb}')
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200

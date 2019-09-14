@@ -5,6 +5,10 @@ config object at initialization (with tests handled via conftest)
 """
 from flask import current_app, g
 import boto3
+import logging.config
+
+logging.config.fileConfig('logging.config')
+log = logging.getLogger()
 
 def set_s3_client(s3=None):
     """
@@ -13,5 +17,6 @@ def set_s3_client(s3=None):
     """
     if 's3' not in g:
         if s3 == None:
+            log.info('setting S3 in global env')
             s3 = boto3.client('s3', region_name=current_app.config['REGION'])
         g.s3 = s3

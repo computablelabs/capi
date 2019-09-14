@@ -1,5 +1,6 @@
 TESTING = True
 DEBUG = True
+LOG_LEVEL = 'INFO'
 
 # AWS
 TABLE_NAME = 'testing'

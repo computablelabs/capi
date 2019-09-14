@@ -1,6 +1,12 @@
 import json
 import boto3
 from botocore.exceptions import ClientError
+from app import app
+import logging
+
+logging.config.fileConfig('logging.config')
+log = logging.getLogger()
+log.setLevel(app.config['LOG_LEVEL'])
 
 def get_secrets(env, region):
     secret_name = f'ffa/datatrust/{env}'
@@ -8,22 +14,10 @@ def get_secrets(env, region):
     client = session.client(service_name='secretsmanager', region_name=region)
 
     try:
+        log.debug('Getting secrets from AWS')
         response = client.get_secret_value(SecretId=secret_name)
     except ClientError as e:
-        if e.response['Error']['Code'] == 'DecryptionFailureException':
-            raise e
-        elif e.response['Error']['Code'] == 'InternalServiceErrorException':
-            raise e
-        elif e.response['Error']['Code'] == 'InvalidParameterException':
-            raise e
-        elif e.response['Error']['Code'] == 'InvalidRequestException':
-            raise e
-        elif e.response['Error']['Code'] == 'ResourceNotFoundException':
-            raise e
-        elif e.response['Error']['Code'] == 'AccessDeniedException':
-            raise e
-        else:
-            # Raise anything we didn't catch
-            raise e
+        log.critical(f'Error retrieving secrets from AWS: {e.response["Error"]["Code"]}')
+        raise e
     else:
         return json.loads(response['SecretString'])

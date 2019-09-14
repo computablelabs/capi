@@ -7,6 +7,10 @@ import os
 from flask import current_app, g
 import boto3
 # from botocore.exceptions import ClientError
+import logging.config
+
+logging.config.fileConfig('logging.config')
+log = logging.getLogger()
 
 def set_dynamo_table(db=None):
     """
@@ -15,6 +19,7 @@ def set_dynamo_table(db=None):
     """
     if 'table' not in g: # check is here as test env will stub before the request cycle begins
         if db == None:
+            log.info('setting dynamodb table in the global env')
             db = boto3.resource('dynamodb', current_app.config['REGION'], endpoint_url=current_app.config['DB_URL'])
 
         g.table = db.Table(current_app.config['TABLE_NAME'])
@@ -27,6 +32,8 @@ def get_listings():
     """
     response = g.table.scan()
     if 'Items' in response: # stupid fukin capital i...
+        log.info('returning db query results')
         return response['Items']
     else:
+        log.info('no items returned in db query')
         return {}
