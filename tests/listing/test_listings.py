@@ -1,13 +1,13 @@
 from io import BytesIO
 import json
 import pytest
+from hexbytes import HexBytes
+from unittest.mock import patch
 from flask import current_app, g
-from core.celery import send_hash_after_mining
+from core.celery import get_send_data_hash_after_mining
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval, time_travel
-from hexbytes import HexBytes
-from unittest import mock
 
 # OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,0]
 
@@ -129,8 +129,11 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert payload['items'][0]['title'] == 'lol catz 9000'
     assert payload['to_block'] > 0
 
-@mock.patch('apis.listing.listings.ListingsRoute.send_hash')
-def test_post_listings(mock_hash_after_mining, w3, voting, datatrust, listing, test_client, s3_client, dynamo_table):
+@patch('apis.listing.listings.ListingsRoute.send_data_hash')
+def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s3_client, dynamo_table):
+    # the mocked send_data_hash method must return a uuid, so fake it here
+    mock_send.return_value = '123-abc'
+
     # Create a listing to get tx_hash
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='test_post_listing')
@@ -147,15 +150,19 @@ def test_post_listings(mock_hash_after_mining, w3, voting, datatrust, listing, t
         'file': (BytesIO(b'a pony'), 'my_little_pony.gif')
     }
 
-    listing = test_client.post('/listings/', 
+    listing = test_client.post('/listings/',
     content_type='multipart/form-data',
     data=test_payload)
-    mock_hash_after_mining.assert_called_once_with(
+
+    mock_send.assert_called_once_with(
         HexBytes(tx).hex(),
         HexBytes(listing_hash).hex(),
         '0xadc113d55e8b7d4a4e132b1f24adcef15f4a4d011cb83b7e08d865538fd4bdf5'
     )
+
     assert listing.status_code == 201
+    payload = json.loads(listing.data)
+    assert payload['task_id'] == '123-abc'
 
     uploaded_file = g.s3.get_object(
         Bucket=current_app.config['S3_DESTINATION'],
@@ -174,7 +181,7 @@ def test_post_listings(mock_hash_after_mining, w3, voting, datatrust, listing, t
     assert new_listing['Item']['file_type'] == test_payload['file_type']
     assert new_listing['Item']['md5_sum'] == test_payload['md5_sum']
 
-def test_send_hash_after_mining(w3, listing, datatrust, voting, test_client):
+def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client, celery):
     """
     Test that the data hash is set for a completed listing candidate
     """
@@ -182,13 +189,15 @@ def test_send_hash_after_mining(w3, listing, datatrust, voting, test_client):
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='test_hash_after_mining')
     tx = transact(listing.list(listing_hash, {'from': maker, 'gas_price': w3.toWei(2, 'gwei'), 'gas': 1000000}))
-    rct = w3.eth.waitForTransactionReceipt(tx)
 
     data_hash = w3.keccak(text='test_data_hash')
 
-    # Use the celery task to set the data hash
-    hash_rcpt = send_hash_after_mining(tx, listing_hash, data_hash)
+    # Use the celery task to set the data hash. we can run it synchronously and bypass testing celery, which we can assume works
+    fn = get_send_data_hash_after_mining()
+    task = fn.s(tx, listing_hash, data_hash).apply()
 
+    # looks to be a uuid of some sort. TODO what exacly is this?
+    assert task != None
     # Verify the data hash in the candidate from protocol
     check_data_hash = HexBytes(datatrust.deployed.functions.getDataHash(listing_hash).call())
     assert check_data_hash == data_hash
