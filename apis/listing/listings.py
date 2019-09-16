@@ -94,10 +94,10 @@ class ListingsRoute(Resource):
             current_app.logger.info(C.NEW_LISTING_SUCCESS)
             return {'message': C.NEW_LISTING_SUCCESS, 'task_id': uuid}, 201
 
-    def send_data_hash(tx_hash, listing, data_hash):
+    def send_data_hash(self, tx_hash, listing, data_hash):
         uuid = get_uuid()
         fn = get_send_data_hash_after_mining()
-        fn(uuid, tx_hash, listing, data_hash).apply_async(task_id=uuid)
+        fn(tx_hash, listing, data_hash).apply_async(task_id=uuid)
         return uuid
 
     def get_payload(self):
