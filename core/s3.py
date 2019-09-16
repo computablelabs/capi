@@ -13,5 +13,6 @@ def set_s3_client(s3=None):
     """
     if 's3' not in g:
         if s3 == None:
+            current_app.logger.info('setting S3 in global env')
             s3 = boto3.client('s3', region_name=current_app.config['REGION'])
         g.s3 = s3
