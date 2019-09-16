@@ -17,7 +17,7 @@ app.config.from_object('config.default')
 app.config.from_envvar('ENV_CONFIG_FILE')
 
 # setup logging
-fileConfig('logging.config')
+fileConfig('config/logging.config')
 app.logger.setLevel(app.config['LOG_LEVEL'])
 
 # init the api and its namespaces
