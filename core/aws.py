@@ -12,18 +12,18 @@ def get_secrets(env, region):
     except ClientError as e:
         if e.response['Error']['Code'] == 'DecryptionFailureException':
             raise e
-        elif e.response['Error']['Code'] == 'InternalServiceErrorException':	
-            raise e	
-        elif e.response['Error']['Code'] == 'InvalidParameterException':	
-            raise e	
-        elif e.response['Error']['Code'] == 'InvalidRequestException':	
-            raise e	
-        elif e.response['Error']['Code'] == 'ResourceNotFoundException':	
-            raise e	
-        elif e.response['Error']['Code'] == 'AccessDeniedException':	
-            raise e	
-        else:	
-            # Raise anything we didn't catch	
+        elif e.response['Error']['Code'] == 'InternalServiceErrorException':
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidParameterException':
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidRequestException':
+            raise e
+        elif e.response['Error']['Code'] == 'ResourceNotFoundException':
+            raise e
+        elif e.response['Error']['Code'] == 'AccessDeniedException':
+            raise e
+        else:
+            # Raise anything we didn't catch
             raise e
     else:
         return json.loads(response['SecretString'])
