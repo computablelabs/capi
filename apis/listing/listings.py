@@ -1,19 +1,19 @@
 import os
 import hashlib
 import boto3
+from hexbytes import HexBytes
 from flask import request, g, current_app
 from flask_restplus import Namespace, Resource
 from core import constants as C
-from core.celery import send_hash_after_mining
+from core.celery import get_uuid, get_send_data_hash_after_mining
 from core.protocol import is_registered
+from core.dynamo import get_listings
 from apis.serializers import Listing, Listings
 from apis.parsers import from_block_owner, parse_from_block_owner
 from apis.helpers import listing_hash_join
 from .serializers import NewListing
 from .parsers import listing_parser
 from .helpers import filter_listed
-from core.dynamo import get_listings
-from hexbytes import HexBytes
 
 api = Namespace('Listings', description='Operations pertaining to the Computable Protocol Listing Object')
 
@@ -79,26 +79,26 @@ class ListingsRoute(Resource):
                 name = self.get_filename()
                 payload['filename'] = name if name else item[0]
 
-            # TODO use tx_hash to wait for mining so that we can call datatrust.set_data_hash
-            # async -> g.w3.waitForTransactionReceipt... NOTE set timeout to ?
             keccak = self.get_keccak(loc)
-            self.send_hash(
-                payload['tx_hash'], 
-                payload['listing_hash'], 
-                HexBytes(keccak).hex() # convert to string for JSON serialization in Celery
-            )
+
+            uuid = self.send_data_hash(
+                payload['tx_hash'],
+                payload['listing_hash'],
+                HexBytes(keccak).hex()) # convert to string for JSON serialization in Celery
+
             current_app.logger.info(f'Listing hash {payload["listing_hash"]} data hash sent to protocol')
+
             # TODO what happens if it doesn't
             os.remove(loc)
-            current_app.logger.info(C.NEW_LISTING_SUCCESS)
-            return {'message': C.NEW_LISTING_SUCCESS}, 201
 
-    def send_hash(self, tx_hash, listing_hash, keccak):
-        """
-        Set the data hash after confirming listing has been mined
-        NOTE: This is only here so that I can mock it for testing
-        """
-        send_hash_after_mining(tx_hash, listing_hash, keccak)
+            current_app.logger.info(C.NEW_LISTING_SUCCESS)
+            return {'message': C.NEW_LISTING_SUCCESS, 'task_id': uuid}, 201
+
+    def send_data_hash(tx_hash, listing, data_hash):
+        uuid = get_uuid()
+        fn = get_send_data_hash_after_mining()
+        fn(uuid, tx_hash, listing, data_hash).apply_async(task_id=uuid)
+        return uuid
 
     def get_payload(self):
         """
