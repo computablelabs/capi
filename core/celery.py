@@ -3,8 +3,8 @@ def initialize(celery, app):
     we have to lazily initialize an existing celery app with our config
     """
     celery.conf.update({
-        'backend': app.config['CELERY_RESULT_BACKEND'],
-        'broker': app.config['CELERY_BROKER_URL']
+        'result_backend': app.config['CELERY_RESULT_BACKEND'],
+        'broker_url': app.config['CELERY_BROKER_URL']
         })
 
     class WithContext(celery.Task):
