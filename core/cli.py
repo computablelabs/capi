@@ -4,7 +4,8 @@ Blueprint containing the 'admin' CLI for datatrust operators
 import click
 from flask import Blueprint
 from flask import current_app, g
-from .protocol import set_w3, get_datatrust, is_registered
+from .protocol import set_w3, get_datatrust, is_registered,
+from .protocol import get_withdrawl_proceeds, get_reserve
 from .helpers import set_gas_prices
 import core.constants as C # TODO why can't i use .constants?
 from computable.helpers.transaction import call, transact, send
@@ -86,3 +87,41 @@ def do_resolution(hash, gas_price):
 
     rct = g.w3.eth.waitForTransactionReceipt(tx)
     click.echo(C.RESOLVED % g.w3.toHex(hash))
+
+@admin.cli.command('withdraw_test', with_appcontext=False)
+# We will default an omitted gas price to 2 gwei TODO set something else?
+@click.option('--gas_price', type=int, default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')
+def withdraw_test(gas_price):
+    do_withdraw(gas_price)
+
+
+@admin.cli.command('withdraw')
+@click.option('--gas_price', type=int, default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')
+def withdraw_real(gas_price):
+    do_withdraw(gas_price)
+
+def do_withdraw(gas_price):
+    """
+    Withdraw all your funds from this datamarket. 
+    """
+
+    # set_w3 by hand as this is not in a request cycle
+    set_w3()
+
+    r = get_reserve()
+    # comp.py HOC methods produce a tuple -> (tx, opts)
+    t = r.withdraw()
+    # we use an abstracted helper to estimate gas, and set the given gas price
+    args = set_gas_prices(t, gas_price) # omit gas arg and it will be estimated
+    # TEST env never need use send... TODO implement send_or_transact helper
+    # TODO(replace with send_or_transact once that's merged in)
+    if current_app.config['TESTING'] == True:
+        tx = transact(args)
+    else:
+        tx = send(g.w3, current_app.config['PRIVATE_KEY'], args)
+
+    rct = g.w3.eth.waitForTransactionReceipt(tx)
+    # TODO if the receipt is wanted we could output it...
+    # click.echo(rct)
+
+    click.echo(C.WITHDRAWN)
