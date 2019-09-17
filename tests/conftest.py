@@ -4,12 +4,12 @@ from flask import current_app
 import pytest
 import boto3
 from moto import mock_dynamodb2, mock_s3
-from app import app
+from app import celery as c
+from app.factory import create_app
 from web3 import Web3
 from core.protocol import set_w3
 from core.dynamo import set_dynamo_table
 from core.s3 import set_s3_client
-from core.celery import set_celery
 import computable # we use this to get the path to the contract abi/bin in the installed lib (rather than copy/paste them)
 from computable.contracts import EtherToken
 from computable.contracts import MarketToken
@@ -194,9 +194,14 @@ def datatrust(w3, datatrust_pre, listing):
     tx_rcpt = w3.eth.waitForTransactionReceipt(tx_hash)
     return datatrust_pre
 
+@pytest.fixture(scope='module')
+def flask_app():
+    an_app = create_app(celery=c)
+    return an_app
+
 @pytest.fixture(scope='function')
-def ctx(w3, ether_token, voting, datatrust, listing):
-    ctx = app.app_context()
+def ctx(w3, ether_token, voting, datatrust, listing, flask_app):
+    ctx = flask_app.app_context()
     ctx.push() # current_app and g now are present
 
     current_app.config['ETHER_TOKEN_CONTRACT_ADDRESS'] = ether_token.address
@@ -269,8 +274,3 @@ def s3_bucket(ctx, s3):
 @pytest.fixture(scope='function')
 def s3_client(s3, s3_bucket):
     set_s3_client(s3)
-
-@pytest.fixture(scope='function')
-def celery(ctx):
-    # TODO could me mock a service here? atm simply bypassing broker by letting test config do its job
-    set_celery()
