@@ -97,7 +97,7 @@ class ListingsRoute(Resource):
 
     def send_data_hash(self, tx_hash, listing, data_hash):
         uid = uuid()
-        send_data_hash_after_mining(tx_hash, listing, data_hash).apply_async(task_id=uuid)
+        send_data_hash_after_mining(tx_hash, listing, data_hash).apply_async(task_id=uid)
         return uid
 
     def get_payload(self):
