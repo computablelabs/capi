@@ -6,10 +6,3 @@ def initialize(celery, app):
         'result_backend': app.config['CELERY_RESULT_BACKEND'],
         'broker_url': app.config['CELERY_BROKER_URL']
         })
-
-    class WithContext(celery.Task):
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return super().__call__(*args, **kwargs)
-
-    celery.Task = WithContext

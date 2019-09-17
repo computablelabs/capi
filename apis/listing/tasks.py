@@ -6,11 +6,17 @@ from core.constants import SEND_DATA_HASH
 from computable.helpers.transaction import call, transact, send
 
 @celery.task(name=SEND_DATA_HASH)
-def send_data_hash_after_mining(tx_hash, listing, data_hash):
+def send_data_hash_after_mining(tx_hash, listing, data_hash, **kwargs):
     """
     Wait for the transaction to be mined, then set the data_hash
     for the uploaded file in protocol.
     """
+
+    # push in a current context for this task if present
+    if kwargs.get('flask_app'):
+        flask_app = kwargs.get('flask_app')
+        ctx = flask_app.app_context()
+        ctx.push()
 
     # TODO else?
     if is_registered() == True:
@@ -34,3 +40,6 @@ def send_data_hash_after_mining(tx_hash, listing, data_hash):
         current_app.logger.info('Waiting for send data hash transaction receipt: %s', g.w3.toHex(send_tx))
         send_rcpt = g.w3.eth.waitForTransactionReceipt(send_tx)
         current_app.logger.info('Send data hash transaction mined: %s', g.w3.toHex(send_rcpt['transactionHash']))
+
+    if kwargs.get('flask_app'):
+        ctx.pop()
