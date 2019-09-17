@@ -1,19 +1,19 @@
 import os
 import hashlib
 import boto3
+from hexbytes import HexBytes
 from flask import request, g, current_app
 from flask_restplus import Namespace, Resource
 from core import constants as C
-from core.celery import send_hash_after_mining
+from core.celery import get_uuid, get_send_data_hash_after_mining
 from core.protocol import is_registered
+from core.dynamo import get_listings
 from apis.serializers import Listing, Listings
 from apis.parsers import from_block_owner, parse_from_block_owner
 from apis.helpers import listing_hash_join
 from .serializers import NewListing
 from .parsers import listing_parser
 from .helpers import filter_listed
-from core.dynamo import get_listings
-from hexbytes import HexBytes
 
 api = Namespace('Listings', description='Operations pertaining to the Computable Protocol Listing Object')
 
@@ -35,8 +35,10 @@ class ListingsRoute(Resource):
         events = filter_listed(args['from_block'], args['filters'])
         # TODO any filtering for dynamo?
         everything = get_listings()
+        current_app.logger.debug('retrieved listings from db')
         it, tb = listing_hash_join(events, everything)
 
+        current_app.logger.info(f'Returning listings from block {args["from_block"]} to block {tb}')
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
 
     @api.expect(listing_parser)
@@ -55,10 +57,12 @@ class ListingsRoute(Resource):
         # github.com/noirbizarre/flask-restplus/issues/140
         # TODO switch to that over checking this in every `setter` when it's available
         if is_registered() == False:
+            current_app.logger.error('POST new listing called but this server is not the datatrust')
             api.abort(500, C.NOT_REGISTERED) # TODO different error code?
         else:
             payload = self.get_payload()
             db_write = self.save_to_db(payload)
+            current_app.logger.info(f'Listing hash {payload["listing_hash"]} saved to db')
             file_item = request.files.items()
             for idx, item in enumerate(file_item):
                 # TODO contents = self.upload_to_s3...
@@ -71,27 +75,30 @@ class ListingsRoute(Resource):
 
                 item[1].save(loc)
                 self.upload_to_s3(payload['listing_hash'], loc)
+                current_app.logger.info(f'Listing hash {payload["listing_hash"]} uploaded to S3')
                 name = self.get_filename()
                 payload['filename'] = name if name else item[0]
 
-            # TODO use tx_hash to wait for mining so that we can call datatrust.set_data_hash
-            # async -> g.w3.waitForTransactionReceipt... NOTE set timeout to ?
             keccak = self.get_keccak(loc)
-            self.send_hash(
-                payload['tx_hash'], 
-                payload['listing_hash'], 
-                HexBytes(keccak).hex() # convert to string for JSON serialization in Celery
-            )
+
+            uuid = self.send_data_hash(
+                payload['tx_hash'],
+                payload['listing_hash'],
+                HexBytes(keccak).hex()) # convert to string for JSON serialization in Celery
+
+            current_app.logger.info(f'Listing hash {payload["listing_hash"]} data hash sent to protocol')
+
             # TODO what happens if it doesn't
             os.remove(loc)
-            return {'message': C.NEW_LISTING_SUCCESS}, 201
 
-    def send_hash(self, tx_hash, listing_hash, keccak):
-        """
-        Set the data hash after confirming listing has been mined
-        NOTE: This is only here so that I can mock it for testing
-        """
-        send_hash_after_mining(tx_hash, listing_hash, keccak)
+            current_app.logger.info(C.NEW_LISTING_SUCCESS)
+            return {'message': C.NEW_LISTING_SUCCESS, 'task_id': uuid}, 201
+
+    def send_data_hash(self, tx_hash, listing, data_hash):
+        uuid = get_uuid()
+        fn = get_send_data_hash_after_mining()
+        fn(tx_hash, listing, data_hash).apply_async(task_id=uuid)
+        return uuid
 
     def get_payload(self):
         """
@@ -100,6 +107,7 @@ class ListingsRoute(Resource):
         for item in ['tx_hash', 'listing_hash', 'title', 'license', 'file_type', 'md5_sum']:
             val = request.form.get(item)
             if not val:
+                current_app.logger.warning(C.MISSING_PAYLOAD_DATA % item)
                 api.abort(400, (C.MISSING_PAYLOAD_DATA % item))
             else:
                 payload[item] = val
@@ -131,8 +139,8 @@ class ListingsRoute(Resource):
             contents = data.read()
             our_md5 = hashlib.md5(contents).hexdigest()
             if our_md5 != their_md5:
-                print('MD5 check failed')
-                api.abort(400, (C.SERVER_ERROR % 'file upload failed'))
+                current_app.logger.warning(C.SERVER_ERROR % 'file upload failed, incorrect md5')
+                api.abort(400, (C.SERVER_ERROR % 'file upload failed, incorrect md5'))
 
         # Read the file a second time to upload to S3
         with open(location, 'rb') as data:

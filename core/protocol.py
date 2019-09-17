@@ -17,8 +17,10 @@ def set_w3(w3=None):
     """
     if 'w3' not in g: # we check here as test cases will stub before the request cycle begins
         if w3 != None:
+            current_app.logger.debug('Setting w3 in global environment')
             g.w3 = w3
         else:
+            current_app.logger.info(f'Setting default eth account {current_app.config["PUBLIC_KEY"]} using provider {current_app.config["RPC_PATH"]}')
             provider = Web3.HTTPProvider(current_app.config['RPC_PATH'])
             g.w3 = Web3(provider)
             g.w3.eth.defaultAccount = current_app.config['PUBLIC_KEY']
@@ -44,11 +46,13 @@ def get_listing():
 def get_backend_address():
     d = get_datatrust()
     address = call(d.get_backend_address())
+    current_app.logger.info(f'backend address from protocol is {address}')
     return address
 
 def get_backend_url():
     d = get_datatrust()
     url = call(d.get_backend_url())
+    current_app.logger.info(f'backend url from protocol is {url}')
     return url
 
 def is_registered():

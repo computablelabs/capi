@@ -1,4 +1,4 @@
-from flask import g
+from flask import g, current_app
 from flask_restplus import Namespace, Resource
 from apis.helpers import extract_listing_hashes, listing_hash_join
 from apis.serializers import Listing, Listings
@@ -47,9 +47,11 @@ class ListingCandidatesRoute(Resource):
         # TODO handle blockchain reverts
         events = filter_candidate_added(args['from_block'], args['filters'])
         everything = get_listings()
+        current_app.logger.debug('retrieved candidates from db')
         # now filter everything by the actual hashes...
         it, tb = listing_hash_join(events, everything)
 
+        current_app.logger.info(f'Returning candidates from block {args["from_block"]} to {tb}')
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
 
 # NOTE: type and kind used interchangeably as reserved keywords are dumb...
@@ -67,6 +69,11 @@ class CandidatesByKindRoute(Resource):
         args = parse_candidates_by_kind(from_block_owner.parse_args(), type)
         # TODO handle blockchain reverts
         events = filter_candidate_added(args['from_block'], args['filters'])
+        everything = get_listings()
+        current_app.logger.debug('retrieved candidates from db')
         # simply returns the hashes as a list
         it, tb = extract_listing_hashes(events)
+
+        current_app.logger.info(f'Returning candidates of type {type} from block {args["from_block"]} to {tb}')
+
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200

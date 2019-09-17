@@ -25,3 +25,5 @@ NOT_REGISTERED = 'This API is not currently the registered datatrust'
 REGISTERED = 'This API is currently the registered datatrust'
 REGISTERED_CANDIDATE = 'This API is an active candidate for datatrust'
 RESOLVED = 'Candidate %s has been marked for resolution'
+# async task names
+SEND_DATA_HASH = 'transactions.send_data_hash'
