@@ -5,9 +5,8 @@ import click
 from flask import Blueprint
 from flask import current_app, g
 from .protocol import set_w3, get_datatrust, is_registered
-from .helpers import set_gas_prices
+from .helpers import set_gas_prices, send_or_transact
 import core.constants as C # TODO why can't i use .constants?
-from computable.helpers.transaction import call, transact, send
 
 admin = Blueprint('admin', __name__)
 
@@ -42,11 +41,8 @@ def do_registration(gas_price):
         t = dt.register(current_app.config['DNS_NAME'])
         # we use an abstracted helper to estimate gas, and set the given gas price
         args = set_gas_prices(t, gas_price) # omit gas arg and it will be estimated
-        # TEST env never need use send... TODO implement send_or_transact helper
-        if current_app.config['TESTING'] == True:
-            tx = transact(args)
-        else:
-            tx = send(g.w3, current_app.config['PRIVATE_KEY'], args)
+        # TEST env never need use send... 
+        tx = send_or_transact(args)
 
         rct = g.w3.eth.waitForTransactionReceipt(tx)
         # TODO if the receipt is wanted we could output it...
@@ -78,11 +74,6 @@ def do_resolution(hash, gas_price):
     args = set_gas_prices(t, gas_price) # omit gas arg and it will be estimated
 
     # TEST env never need use send... TODO implement send_or_transact helper
-    # tx = send_or_transact(args)
-    if current_app.config['TESTING'] == True:
-        tx = transact(args)
-    else:
-        tx = send(g.w3, current_app.config['PRIVATE_KEY'], args)
-
+    tx = send_or_transact(args)
     rct = g.w3.eth.waitForTransactionReceipt(tx)
     click.echo(C.RESOLVED % g.w3.toHex(hash))

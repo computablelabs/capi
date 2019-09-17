@@ -1,4 +1,5 @@
 from flask import current_app, g
+from computable.helpers.transaction import call, transact, send
 
 def set_gas_prices(t, gas_price, gas=None):
     """
@@ -21,3 +22,13 @@ def get_gas_price(key='average'):
     TODO this...
     """
     pass
+
+def send_or_transact(t):
+    """
+    If testing mode, transacts, else sends
+    """
+    if current_app.config['TESTING'] == True:
+        tx = transact(t)
+    else:
+        tx = send(g.w3, current_app.config['PRIVATE_KEY'], t)
+    return tx

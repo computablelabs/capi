@@ -8,7 +8,7 @@ from flask import current_app, g
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from computable.contracts import Voting, Datatrust, Listing
-from computable.helpers.transaction import call, transact, send
+from computable.helpers.transaction import call
 
 def set_w3(w3=None):
     """

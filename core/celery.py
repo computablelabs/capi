@@ -4,8 +4,7 @@ Abstractions for celery and asynchronous tasks handled by celery workers
 from celery import Celery, task, Task
 from flask import current_app, g
 from .protocol import get_datatrust, is_registered
-from .helpers import set_gas_prices
-from computable.helpers.transaction import call, transact, send
+from .helpers import set_gas_prices, send_or_transact
 
 def make_celery(app):
     """
@@ -41,11 +40,7 @@ def send_hash_after_mining(tx_hash, listing, data_hash):
         t = dt.set_data_hash(listing, data_hash)
         gwei = 2 # TODO use get_gas_price ethgasstation call
         t = set_gas_prices(t, gwei)
-        # TODO send_or_transact
-        if current_app.config['TESTING'] == True:
-            tx = transact(t)
-        else:
-            tx = send(g.w3, current_app.config['PRIVATE_KEY'], t)
+        tx = send_or_transact(t)
 
         # TODO timeout length?
         hash_rcpt = g.w3.eth.waitForTransactionReceipt(tx)
