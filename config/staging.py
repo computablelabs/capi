@@ -15,7 +15,7 @@ DATATRUST_CONTRACT_ADDRESS = '0xEF1Df5D48F08f25ADF297fF5dee5694b6C6599DE'
 LISTING_CONTRACT_ADDRESS = '0x168f0DFe554f1aa614F87721C7e3d55c057c4F29'
 
 # AWS
-secrets = get_secrets('dev', 'us-west-1')
+secrets = get_secrets('staging', 'us-west-1')
 
 TABLE_NAME = secrets['TABLE_NAME']
 DB_URL = secrets['DB_URL']
