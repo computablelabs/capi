@@ -4,8 +4,8 @@ import boto3
 from hexbytes import HexBytes
 from flask import request, g, current_app
 from flask_restplus import Namespace, Resource
+from celery import uuid
 from core import constants as C
-from core.celery import get_uuid, get_send_data_hash_after_mining
 from core.protocol import is_registered
 from core.dynamo import get_listings
 from apis.serializers import Listing, Listings
@@ -14,6 +14,7 @@ from apis.helpers import listing_hash_join
 from .serializers import NewListing
 from .parsers import listing_parser
 from .helpers import filter_listed
+from .tasks import send_data_hash_after_mining
 
 api = Namespace('Listings', description='Operations pertaining to the Computable Protocol Listing Object')
 
@@ -81,7 +82,7 @@ class ListingsRoute(Resource):
 
             keccak = self.get_keccak(loc)
 
-            uuid = self.send_data_hash(
+            uid = self.send_data_hash(
                 payload['tx_hash'],
                 payload['listing_hash'],
                 HexBytes(keccak).hex()) # convert to string for JSON serialization in Celery
@@ -92,13 +93,13 @@ class ListingsRoute(Resource):
             os.remove(loc)
 
             current_app.logger.info(C.NEW_LISTING_SUCCESS)
-            return {'message': C.NEW_LISTING_SUCCESS, 'task_id': uuid}, 201
+            return {'message': C.NEW_LISTING_SUCCESS, 'task_id': uid}, 201
 
     def send_data_hash(self, tx_hash, listing, data_hash):
-        uuid = get_uuid()
-        fn = get_send_data_hash_after_mining()
-        fn(tx_hash, listing, data_hash).apply_async(task_id=uuid)
-        return uuid
+        uid = uuid()
+        send_data_hash_after_mining.s(tx_hash,listing,data_hash).apply_async(task_id=uid)
+
+        return uid
 
     def get_payload(self):
         """
