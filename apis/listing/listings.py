@@ -14,7 +14,7 @@ from apis.helpers import listing_hash_join
 from .serializers import NewListing
 from .parsers import listing_parser
 from .helpers import filter_listed
-from .tasks import get_send_data_hash_after_mining
+from .tasks import send_data_hash_after_mining
 
 api = Namespace('Listings', description='Operations pertaining to the Computable Protocol Listing Object')
 
@@ -97,8 +97,7 @@ class ListingsRoute(Resource):
 
     def send_data_hash(self, tx_hash, listing, data_hash):
         uid = uuid()
-        task = get_send_data_hash_after_mining()
-        task(tx_hash, listing, data_hash).apply_async(task_id=uid)
+        send_data_hash_after_mining.s(tx_hash,listing,data_hash).apply_async(task_id=uid)
 
         return uid
 
