@@ -7,6 +7,9 @@ test:
 development:
 	ENV_CONFIG_FILE=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))config/development.py python run.py
 
+worker:
+	ENV_CONFIG_FILE=$(dir $(abspath $(lastword $(MAKEFILE_LIST))))config/development.py celery -A celery_worker.celery worker --loglevel=info
+
 local_docker:
 	docker build -t capi:local . -f Dockerfile_local.dockerfile \
 		--build-arg accesskey=$(shell aws configure get aws_access_key_id) \
