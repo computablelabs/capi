@@ -1,5 +1,5 @@
-web3==5.1.0
-eth-tester
+web3==5.0.2
+eth-tester==0.1.0b39
 pytest==5.1.2
 boto3==1.9.222
 Flask==1.1.1
