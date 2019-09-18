@@ -7,7 +7,7 @@ from flask import current_app, g
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval, time_travel
-from apis.listing.tasks import send_data_hash_after_mining
+from apis.listing.tasks import get_send_data_hash_after_mining
 
 # OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,0]
 
@@ -193,10 +193,11 @@ def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client
     data_hash = w3.keccak(text='test_data_hash')
 
     # Use the celery task to set the data hash. we can run it synchronously and bypass testing celery, which we can assume works
-    task = send_data_hash_after_mining.s(tx, listing_hash, data_hash).apply()
+    task = get_send_data_hash_after_mining()
+    res = task.s(tx, listing_hash, data_hash).apply()
 
     # looks to be a uuid of some sort. TODO what exacly is this?
-    assert task != None
+    assert res != None
     # Verify the data hash in the candidate from protocol
     check_data_hash = HexBytes(datatrust.deployed.functions.getDataHash(listing_hash).call())
     assert check_data_hash == data_hash
