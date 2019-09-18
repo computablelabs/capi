@@ -2,7 +2,6 @@ from flask import current_app, g
 from app import celery
 from core.protocol import set_w3, get_datatrust, is_registered
 from core.helpers import set_gas_prices
-from core.constants import SEND_DATA_HASH
 from computable.helpers.transaction import call, transact, send
 
 @celery.task
