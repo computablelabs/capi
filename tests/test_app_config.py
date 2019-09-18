@@ -1,7 +1,7 @@
 from flask import current_app, g
 import pytest
 
-def test_config(ether_token, voting, datatrust, listing, ctx):
+def test_config(ether_token, voting, datatrust, listing, reserve, ctx):
     assert current_app.config['TESTING'] == True
     assert current_app.config['DEBUG'] == True
 
@@ -9,6 +9,7 @@ def test_config(ether_token, voting, datatrust, listing, ctx):
     assert current_app.config['VOTING_CONTRACT_ADDRESS'] == voting.address
     assert current_app.config['DATATRUST_CONTRACT_ADDRESS'] == datatrust.address
     assert current_app.config['LISTING_CONTRACT_ADDRESS'] == listing.address
+    assert current_app.config['RESERVE_CONTRACT_ADDRESS'] == reserve.address
     assert len(g.w3.eth.defaultAccount) == 42
 
 def test_get_client(test_client):

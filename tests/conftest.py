@@ -195,7 +195,7 @@ def datatrust(w3, datatrust_pre, listing):
     return datatrust_pre
 
 @pytest.fixture(scope='function')
-def ctx(w3, ether_token, voting, datatrust, listing):
+def ctx(w3, ether_token, voting, datatrust, listing, reserve):
     ctx = app.app_context()
     ctx.push() # current_app and g now are present
 
@@ -203,6 +203,7 @@ def ctx(w3, ether_token, voting, datatrust, listing):
     current_app.config['VOTING_CONTRACT_ADDRESS'] = voting.address
     current_app.config['DATATRUST_CONTRACT_ADDRESS'] = datatrust.address
     current_app.config['LISTING_CONTRACT_ADDRESS'] = listing.address
+    current_app.config['RESERVE_CONTRACT_ADDRESS'] = reserve.address
     current_app.config['PUBLIC_KEY'] = w3.eth.defaultAccount
     current_app.config['S3_DESTINATION'] = 'Testy_McTestbucket'
     set_w3(w3)
