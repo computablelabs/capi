@@ -1,7 +1,6 @@
 import os
 import hashlib
 import boto3
-from hexbytes import HexBytes
 from flask import request, g, current_app
 from flask_restplus import Namespace, Resource
 from celery import uuid
@@ -85,7 +84,7 @@ class ListingsRoute(Resource):
             uid = self.send_data_hash(
                 payload['tx_hash'],
                 payload['listing_hash'],
-                HexBytes(keccak).hex()) # convert to string for JSON serialization in Celery
+                g.w3.toHex(keccak)) # convert to string for JSON serialization in Celery
 
             current_app.logger.info(f'Listing hash {payload["listing_hash"]} data hash sent to protocol')
 
