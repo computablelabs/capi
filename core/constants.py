@@ -20,8 +20,13 @@ SERVER_ERROR = 'Operation failed due to internal server error: %s'
 DB_SUCCESS = 'Database transaction completed successfully'
 ITEM_NOT_FOUND = 'No results returned'
 DB_ERROR = 'Operation failed due to database read/write error'
+
 # Protocol related messages
 NOT_REGISTERED = 'This API is not currently the registered datatrust'
 REGISTERED = 'This API is currently the registered datatrust'
 REGISTERED_CANDIDATE = 'This API is an active candidate for datatrust'
 RESOLVED = 'Candidate %s has been marked for resolution'
+
+# Celery related
+CELERY_TASK_GET_TIMEOUT = 5.0 # seconds
+CELERY_TASK_FETCHED = 'Asynchronous task %s fetched successfully'

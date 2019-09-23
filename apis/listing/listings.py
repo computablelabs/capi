@@ -39,6 +39,7 @@ class ListingsRoute(Resource):
         it, tb = listing_hash_join(events, everything)
 
         current_app.logger.info(f'Returning listings from block {args["from_block"]} to block {tb}')
+
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
 
     @api.expect(listing_parser)
@@ -92,7 +93,8 @@ class ListingsRoute(Resource):
             os.remove(loc)
 
             current_app.logger.info(C.NEW_LISTING_SUCCESS)
-            return {'message': C.NEW_LISTING_SUCCESS, 'task_id': uid}, 201
+
+            return dict(message=C.NEW_LISTING_SUCCESS, task_id=uid), 201
 
     def send_data_hash(self, tx_hash, listing, data_hash):
         uid = uuid()
