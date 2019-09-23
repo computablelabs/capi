@@ -5,10 +5,9 @@ import click
 from flask import Blueprint
 from flask import current_app, g
 from .protocol import set_w3, get_datatrust, is_registered
-from .protocol import get_reserve
-from .helpers import set_gas_prices
-import core.constants as C  # TODO why can't i use .constants?
-from computable.helpers.transaction import transact, send
+from .helpers import set_gas_prices, send_or_transact
+import core.constants as C # TODO why can't i use .constants?
+from computable.helpers.transaction import call
 
 admin = Blueprint('admin', __name__)
 
@@ -47,17 +46,9 @@ def do_registration(gas_price):
         dt = get_datatrust()
         # comp.py HOC methods produce a tuple -> (tx, opts)
         t = dt.register(current_app.config['DNS_NAME'])
-        # we use an abstracted helper to estimate gas, and set the given gas
-        # price
-        # omit gas arg and it will be estimated
-        args = set_gas_prices(t, gas_price)
-        # TEST env never need use send... TODO implement send_or_transact
-        # helper
-        if current_app.config['TESTING'] == True:
-            tx = transact(args)
-        else:
-            tx = send(g.w3, current_app.config['PRIVATE_KEY'], args)
-
+        # we use an abstracted helper to estimate gas, and set the given gas price
+        args = set_gas_prices(t, gas_price) # omit gas arg and it will be estimated
+        tx = send_or_transact(args)
         rct = g.w3.eth.waitForTransactionReceipt(tx)
         # TODO if the receipt is wanted we could output it...
         # click.echo(rct)
@@ -95,17 +86,10 @@ def do_resolution(hash, gas_price):
     set_w3()
     dt = get_datatrust()
     t = dt.resolve_registration(hash)
-    # omit gas arg and it will be estimated
-    args = set_gas_prices(t, gas_price)
-
-    # TEST env never need use send... TODO implement send_or_transact helper
-    # tx = send_or_transact(args)
-    if current_app.config['TESTING'] == True:
-        tx = transact(args)
-    else:
-        tx = send(g.w3, current_app.config['PRIVATE_KEY'], args)
-
+    args = set_gas_prices(t, gas_price) # omit gas arg and it will be estimated
+    tx = send_or_transact(args)
     rct = g.w3.eth.waitForTransactionReceipt(tx)
+
     click.echo(C.RESOLVED % g.w3.toHex(hash))
 
 

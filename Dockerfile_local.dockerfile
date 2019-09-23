@@ -12,6 +12,6 @@ ENV AWS_SECRET_ACCESS_KEY=$secretkey
 RUN pip install -r requirements.txt
 
 ENV PYTHONPATH := .
-ENV ENV_CONFIG_FILE=/app/config/development.py
+ENV ENV_CONFIG_FILE=/app/config/staging.py
 
-CMD ["python", "run.py"]
+CMD ["/app/scripts/launch.sh"]

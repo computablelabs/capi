@@ -1,4 +1,5 @@
 from flask import current_app, g
+from computable.helpers.transaction import send, transact
 
 def set_gas_prices(t, gas_price, gas=None):
     """
@@ -21,3 +22,16 @@ def get_gas_price(key='average'):
     TODO this...
     """
     pass
+
+def send_or_transact(args):
+    """
+    Given a computable.py HOC args tuple (tx, opts), inspect the current app env
+    and either send the transaction using the datatrust private key, or
+    simply transact it if it test
+    """
+    if current_app.config['TESTING'] == True:
+        tx = transact(args)
+    else:
+        tx = send(g.w3, current_app.config['PRIVATE_KEY'], args)
+
+    return tx

@@ -4,10 +4,10 @@ import pytest
 from hexbytes import HexBytes
 from unittest.mock import patch
 from flask import current_app, g
-from core.celery import get_send_data_hash_after_mining
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval, time_travel
+from apis.listing.tasks import send_data_hash_after_mining
 
 # OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,0]
 
@@ -181,7 +181,7 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
     assert new_listing['Item']['file_type'] == test_payload['file_type']
     assert new_listing['Item']['md5_sum'] == test_payload['md5_sum']
 
-def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client, celery):
+def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client):
     """
     Test that the data hash is set for a completed listing candidate
     """
@@ -193,8 +193,7 @@ def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client
     data_hash = w3.keccak(text='test_data_hash')
 
     # Use the celery task to set the data hash. we can run it synchronously and bypass testing celery, which we can assume works
-    fn = get_send_data_hash_after_mining()
-    task = fn.s(tx, listing_hash, data_hash).apply()
+    task = send_data_hash_after_mining.s(tx, listing_hash, data_hash).apply()
 
     # looks to be a uuid of some sort. TODO what exacly is this?
     assert task != None
