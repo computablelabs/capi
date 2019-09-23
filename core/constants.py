@@ -30,3 +30,8 @@ RESOLVED = 'Candidate %s has been marked for resolution'
 # Celery related
 CELERY_TASK_GET_TIMEOUT = 5.0 # seconds
 CELERY_TASK_FETCHED = 'Asynchronous task %s fetched successfully'
+STARTED = 'STARTED'
+PENDING = 'PENDING'
+SUCCESS = 'SUCCESS'
+FAILURE = 'FAILURE'
+
