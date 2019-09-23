@@ -21,7 +21,7 @@ class TaskRoute(Resource):
         Given a celery task uuid, instantiate an AsyncResult and return
         its status to the caller
         """
-        task = AsyncResult(id, backend=current_app.config['CELERY_RESULT_BACKEND'])
+        task = self.get_task(id)
         stat = task.status
         res = None
 
@@ -42,3 +42,9 @@ class TaskRoute(Resource):
             current_app.logger.info(f'Celery task {id} fetched and forgotten')
 
         return dict(message=(C.CELERY_TASK_FETCHED % id), status=stat, result=res), 200
+
+    def get_task(self, id):
+        """
+        Abstraction for fetching the actual celery task, easy to mock.
+        """
+        return AsyncResult(id, backend=current_app.config['CELERY_RESULT_BACKEND'])
