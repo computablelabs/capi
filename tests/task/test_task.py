@@ -43,7 +43,7 @@ def test_get_successful_task(mock_get_task, test_client):
     payload = json.loads(response.data)
     assert payload['message'] == (C.CELERY_TASK_FETCHED % id)
     assert payload['status'] == C.SUCCESS
-    assert float(payload['result']) == C.CELERY_TASK_GET_TIMEOUT
+    assert float(payload['result']) == C.CELERY_TASK_TIMEOUT
 
 @patch('apis.task.tasks.TaskRoute.get_task')
 def test_get_failed_task(mock_get_task, test_client):
@@ -59,3 +59,14 @@ def test_get_failed_task(mock_get_task, test_client):
     assert payload['message'] == (C.CELERY_TASK_FETCHED % id)
     assert payload['status'] == C.FAILURE
     assert payload['result'] == None
+
+@patch('apis.task.tasks.TaskRoute.get_task')
+def test_get_non_existant_task(mock_get_task, test_client):
+    # doesn't matter what kind of error, any will do
+    mock_get_task.side_effect = Exception('foo', 'bar')
+    id = 'abcd-4567'
+
+    response = test_client.get(f'/tasks/{id}')
+    mock_get_task.assert_called_once_with(id)
+
+    assert response.status_code == 404

@@ -28,8 +28,10 @@ REGISTERED_CANDIDATE = 'This API is an active candidate for datatrust'
 RESOLVED = 'Candidate %s has been marked for resolution'
 
 # Celery related
-CELERY_TASK_GET_TIMEOUT = 5.0 # seconds
+CELERY_TASK_TIMEOUT = 5.0 # seconds
 CELERY_TASK_FETCHED = 'Asynchronous task %s fetched successfully'
+CELERY_TASK_NOT_FOUND = 'Asynchronous task %s not found'
+CELERY_TASK_TIMED_OUT = 'Asynchronous task %s timed out'
 STARTED = 'STARTED'
 PENDING = 'PENDING'
 SUCCESS = 'SUCCESS'

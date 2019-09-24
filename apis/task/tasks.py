@@ -15,13 +15,19 @@ class TaskRoute(Resource):
     @api.expect(task_parser)
     @api.marshal_with(TaskResult)
     @api.response(200, C.CELERY_TASK_FETCHED)
-    @api.response(500, C.SERVER_ERROR)
+    @api.response(404, C.SERVER_ERROR)
+    @api.response(408, C.SERVER_ERROR)
     def get(self, id):
         """
         Given a celery task uuid, instantiate an AsyncResult and return
         its status to the caller
         """
-        task = self.get_task(id)
+        try:
+            task = self.get_task(id)
+        except:
+            current_app.logger.info(f'Celery task {id} could not be found')
+            api.abort(404, (C.CELERY_TASK_NOT_FOUND % id))
+
         stat = task.status
         res = None
 
@@ -30,11 +36,11 @@ class TaskRoute(Resource):
                 # when, successful there will be a tx_hash we can return
                 try:
                     # we'll give it 5 seconds
-                    res = task.get(C.CELERY_TASK_GET_TIMEOUT)
+                    res = task.get(C.CELERY_TASK_TIMEOUT)
                 except Timeout:
                     # TODO different error code?
                     current_app.logger.info(f'Celery task {id} timed out during get attempt')
-                    api.abort(500, (C.SERVER_ERROR % 'Asynchronous task timed out'))
+                    api.abort(408, (C.CELERY_TASK_TIMED_OUT % id))
 
 
             # regardless of succeed or failure, both are terminal and this task may be removed from persistance
