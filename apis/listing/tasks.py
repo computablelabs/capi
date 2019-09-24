@@ -31,4 +31,7 @@ def send_data_hash_after_mining(tx_hash, listing, data_hash):
         # TODO timeout length?
         current_app.logger.info('Waiting for send data hash transaction receipt: %s', send_tx)
         send_rcpt = g.w3.eth.waitForTransactionReceipt(send_tx)
-        current_app.logger.info('Send data hash transaction mined: %s', send_rcpt['transactionHash'])
+        # return this as the task result as well. use hex...
+        send_hash = g.w3.toHex(send_rcpt['transactionHash'])
+        current_app.logger.info('Send data hash transaction mined: %s', send_hash)
+        return send_hash

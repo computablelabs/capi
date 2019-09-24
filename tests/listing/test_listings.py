@@ -1,7 +1,6 @@
 from io import BytesIO
 import json
 import pytest
-from hexbytes import HexBytes
 from unittest.mock import patch
 from flask import current_app, g
 from computable.helpers.transaction import call, transact
@@ -141,12 +140,12 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
     rct = w3.eth.waitForTransactionReceipt(tx)
 
     test_payload = {
-        'tx_hash': HexBytes(tx).hex(),
+        'tx_hash': w3.toHex(tx),
         'title': 'My Bestest Pony',
         'license': 'MIT',
         'file_type': 'gif',
         'md5_sum': '7f7c47e44b125f2944cb0879cbe428ce',
-        'listing_hash': HexBytes(listing_hash).hex(),
+        'listing_hash': w3.toHex(listing_hash),
         'file': (BytesIO(b'a pony'), 'my_little_pony.gif')
     }
 
@@ -155,8 +154,8 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
     data=test_payload)
 
     mock_send.assert_called_once_with(
-        HexBytes(tx).hex(),
-        HexBytes(listing_hash).hex(),
+        w3.toHex(tx),
+        w3.toHex(listing_hash),
         '0xadc113d55e8b7d4a4e132b1f24adcef15f4a4d011cb83b7e08d865538fd4bdf5'
     )
 
@@ -166,13 +165,13 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
 
     uploaded_file = g.s3.get_object(
         Bucket=current_app.config['S3_DESTINATION'],
-        Key=HexBytes(listing_hash).hex()
+        Key=w3.toHex(listing_hash)
     )['Body'].read().decode()
     assert uploaded_file == 'a pony'
 
     new_listing = g.table.get_item(
         Key={
-            'listing_hash': HexBytes(listing_hash).hex()
+            'listing_hash': w3.toHex(listing_hash)
         }
     )
     assert new_listing['Item']['listing_hash'] == test_payload['listing_hash']
@@ -190,7 +189,7 @@ def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client
     listing_hash = w3.keccak(text='test_hash_after_mining')
     tx = transact(listing.list(listing_hash, {'from': maker, 'gas_price': w3.toWei(2, 'gwei'), 'gas': 1000000}))
 
-    data_hash = w3.keccak(text='test_data_hash')
+    data_hash = w3.toHex(w3.keccak(text='test_data_hash'))
 
     # Use the celery task to set the data hash. we can run it synchronously and bypass testing celery, which we can assume works
     task = send_data_hash_after_mining.s(tx, listing_hash, data_hash).apply()
@@ -198,5 +197,5 @@ def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client
     # looks to be a uuid of some sort. TODO what exacly is this?
     assert task != None
     # Verify the data hash in the candidate from protocol
-    check_data_hash = HexBytes(datatrust.deployed.functions.getDataHash(listing_hash).call())
+    check_data_hash = w3.toHex(datatrust.deployed.functions.getDataHash(listing_hash).call())
     assert check_data_hash == data_hash
