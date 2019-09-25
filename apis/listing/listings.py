@@ -106,7 +106,7 @@ class ListingsRoute(Resource):
         """
         """
         payload = {}
-        for item in ['tx_hash', 'listing_hash', 'title', 'license', 'file_type', 'md5_sum']:
+        for item in ['tx_hash', 'listing_hash', 'title', 'description', 'license', 'file_type', 'md5_sum']:
             val = request.form.get(item)
             if not val:
                 current_app.logger.warning(C.MISSING_PAYLOAD_DATA % item)
