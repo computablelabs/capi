@@ -146,7 +146,8 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
         'file_type': 'gif',
         'md5_sum': '7f7c47e44b125f2944cb0879cbe428ce',
         'listing_hash': w3.toHex(listing_hash),
-        'file': (BytesIO(b'a pony'), 'my_little_pony.gif')
+        'file': (BytesIO(b'a pony'), 'my_little_pony.gif'),
+        'description': 'mah pony is mah pony'
     }
 
     listing = test_client.post('/listings/',
@@ -176,6 +177,7 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
     )
     assert new_listing['Item']['listing_hash'] == test_payload['listing_hash']
     assert new_listing['Item']['title'] == test_payload['title']
+    assert new_listing['Item']['description'] == test_payload['description']
     assert new_listing['Item']['license'] == test_payload['license']
     assert new_listing['Item']['file_type'] == test_payload['file_type']
     assert new_listing['Item']['md5_sum'] == test_payload['md5_sum']
