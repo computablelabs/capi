@@ -1,6 +1,7 @@
 import os
 from flask import Flask
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix # cuz https is hard i guess
 from apis import api
 from core.cli import admin
 from core.protocol import set_w3
@@ -31,6 +32,8 @@ def create_app(app_name=a_name, **kwargs):
     # initialize the celery with this app if present
     if kwargs.get('celery'):
         initialize(kwargs.get('celery'), app)
+    # allow swagger to actually work when deployed
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     # setup any global before-request type calls
     # NOTE if restplus gets these per-namespace -> move them. currently not avail...
