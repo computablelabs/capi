@@ -9,6 +9,7 @@ from core.dynamo import set_dynamo_table
 from core.s3 import set_s3_client
 from core.celery import initialize
 from logging.config import fileConfig
+from flask_jwt_extended import JWTManager
 
 # this little dance is so that we can align flask and celery on name
 a_name = os.path.dirname(os.path.realpath(__file__)).split('/')[-1]
@@ -34,6 +35,8 @@ def create_app(app_name=a_name, **kwargs):
         initialize(kwargs.get('celery'), app)
     # allow swagger to actually work when deployed
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+    # Setup the Flask-JWT-Extended extension
+    jwt = JWTManager(app)
 
     # setup any global before-request type calls
     # NOTE if restplus gets these per-namespace -> move them. currently not avail...
