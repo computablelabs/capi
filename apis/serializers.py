@@ -9,7 +9,8 @@ Listing = Model('Listing', {
     'license': fields.String(required=True, description='Usage license'),
     'listing_hash': fields.String(required=True, description='The listing this upload belongs to'),
     'file_type': fields.String(required=True, description='File content: video, image, audio, etc'),
-    'tags': fields.List(fields.String, required=False, description='Tags to categorize and describe the listing file')
+    'tags': fields.List(fields.String, required=False, description='Tags to categorize and describe the listing file'),
+    'owner': fields.String(required=True, description='Public key of the owner')
     })
 
 Listings = Model('Listings', {
