@@ -1,14 +1,51 @@
 from flask import g, current_app
 from flask_restplus import Namespace, Resource
+from celery import uuid
 from celery.result import AsyncResult
 from celery.exceptions import TimeoutError as Timeout
+from core.protocol import is_registered
 import core.constants as C
-from .parsers import task_parser
+from apis.tasks import wait_for_mining
+from .parsers import task_parser, new_task
 from .serializers import TaskResult
 
 api = Namespace('Tasks', description='Operations pertaining to celery asyncronous tasks')
 
 api.models['TaskResult'] = TaskResult
+
+@api.route('/', methods=['POST'])
+class NewTaskRoute(Resource):
+    @api.expect(new_task)
+    @api.marshal_with(TaskResult)
+    @api.response(201, C.CELERY_TASK_CREATED)
+    @api.response(400, C.MISSING_PAYLOAD_DATA)
+    @api.response(500, C.SERVER_ERROR)
+    def post(self):
+        """
+        Given a transaction hash, start an async task to monitor when it has mined.
+        Once created users can use 'TaskRoute' to check its status.
+        """
+        if is_registered() == False:
+            current_app.logger.error('POST new task called but this server is not the datatrust')
+            api.abort(500, C.NOT_REGISTERED) # TODO different error code?
+        else:
+            args = new_task.parse_args()
+            # must have a tx_hash
+            tx = args['tx_hash']
+            if not tx:
+                current_app.logger.warning(C.MISSING_PAYLOAD_DATA % 'tx_hash')
+                api.abort(400, (C.MISSING_PAYLOAD_DATA % 'tx_hash'))
+            else:
+                uid = self.start_task(tx)
+                current_app.logger.info(C.NEW_LISTING_SUCCESS)
+
+                return dict(message=(C.CELERY_TASK_CREATED % uid), task_id=uid), 201
+
+    def start_task(self, tx_hash):
+        uid = uuid()
+        wait_for_mining.s(tx_hash).apply_async(task_id=uid)
+
+        return uid
 
 @api.route('/<string:id>', methods=['GET'])
 class TaskRoute(Resource):

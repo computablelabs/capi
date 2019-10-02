@@ -1,7 +1,11 @@
 import json
 import pytest
+from flask import current_app
 from unittest.mock import patch
+from computable.helpers.transaction import call, transact
+from computable.contracts.constants import PLURALITY
 import core.constants as C
+from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval, time_travel
 
 class MockTask:
     status=None
@@ -70,3 +74,61 @@ def test_get_non_existant_task(mock_get_task, test_client):
     mock_get_task.assert_called_once_with(id)
 
     assert response.status_code == 404
+
+# before we can test posting tasks we need to register a datatrust
+# TODO should likely create a registered_datatrust fixture
+def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, datatrust):
+    tx = transact(datatrust.register(current_app.config['DNS_NAME'], {'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
+    rct = w3.eth.waitForTransactionReceipt(tx)
+
+    reg_hash = w3.keccak(text=current_app.config['DNS_NAME'])
+
+    # should see the candidate now
+    is_candidate = call(voting.is_candidate(reg_hash))
+    assert is_candidate == True
+
+    # we'll use acct 2 as voter, will likely need market token...
+    voter = w3.eth.accounts[2]
+    stake = parameterizer_opts['stake']
+    trans_rct = maybe_transfer_market_token(w3, market_token, voter, stake)
+    # will likely need to approve voting
+    app_rct = maybe_increase_market_token_approval(w3, market_token, voter, voting.address, stake)
+    # should be able to vote now
+    vote_tx = transact(voting.vote(reg_hash, 1,
+        {'from': voter, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
+    vote_rct = w3.eth.waitForTransactionReceipt(vote_tx)
+    # check that the vote registered
+    candidate = call(voting.get_candidate(reg_hash))
+    assert candidate[4] == 1
+    # we need to move forward in time then resolve the vote
+    block_now = w3.eth.getBlock(w3.eth.blockNumber)
+    time_travel(w3, parameterizer_opts['vote_by'])
+    block_later = w3.eth.getBlock(w3.eth.blockNumber)
+    assert block_now['timestamp'] < block_later['timestamp']
+    assert block_later['timestamp'] > candidate[3]
+    did_pass = call(voting.did_pass(reg_hash, parameterizer_opts['plurality']))
+    assert did_pass == True
+
+    poll_closed = call(voting.poll_closed(reg_hash))
+    assert poll_closed == True
+
+    # resolve the candidate
+    res_tx = transact(datatrust.resolve_registration(reg_hash))
+    res_rct = w3.eth.waitForTransactionReceipt(res_tx)
+
+    # datatrust should be official
+    addr = call(datatrust.get_backend_address())
+    assert addr == w3.eth.defaultAccount
+
+@patch('apis.task.tasks.NewTaskRoute.start_task')
+def test_post_new_task(mock_start_task, test_client):
+    return_value = 'abc-123'
+    mock_start_task.return_value = return_value
+
+    response = test_client.post('/tasks/', json={'tx_hash':'0xwhatever'})
+
+    mock_start_task.assert_called_once_with('0xwhatever')
+    assert response.status_code == 201
+    payload = json.loads(response.data)
+    assert payload['message'] == (C.CELERY_TASK_CREATED % return_value)
+    assert payload['task_id'] == return_value

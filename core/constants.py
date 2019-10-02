@@ -30,10 +30,17 @@ RESOLVED = 'Candidate %s has been marked for resolution'
 # Celery related
 CELERY_TASK_TIMEOUT = 5.0 # seconds
 CELERY_TASK_FETCHED = 'Asynchronous task %s fetched successfully'
+CELERY_TASK_CREATED= 'Asynchronous task %s created successfully'
 CELERY_TASK_NOT_FOUND = 'Asynchronous task %s not found'
 CELERY_TASK_TIMED_OUT = 'Asynchronous task %s timed out'
 STARTED = 'STARTED'
 PENDING = 'PENDING'
 SUCCESS = 'SUCCESS'
 FAILURE = 'FAILURE'
+WAITING_FOR_RECEIPT = 'Waiting on transaction receipt for %s'
+TRANSACTION_MINED = 'Transaction mined: %s'
+WAITING_FOR_NAMED_RECEIPT = 'Waiting on %s transaction receipt for %s'
+NAMED_TRANSACTION_MINED = '%s transaction mined: %s'
 
+# EVM related (also celery task)
+EVM_TIMEOUT = 300 # seconds. how long to wait before bailing on things like `waitForTransactionReceipt`
