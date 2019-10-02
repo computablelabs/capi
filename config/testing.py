@@ -11,3 +11,6 @@ DNS_NAME = 'test.testing.com'
 # Celery
 CELERY_BROKER_URL = None
 CELERY_RESULT_BACKEND = None
+
+# JWT
+JWT_SECRET_KEY = 'super-secret'

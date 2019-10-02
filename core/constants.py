@@ -15,6 +15,8 @@ candidate_kinds = {
 NEW_LISTING_SUCCESS = 'Listing upload success. Data hash sent to protocol'
 MISSING_PAYLOAD_DATA = 'Incomplete payload in request body: %s'
 SERVER_ERROR = 'Operation failed due to internal server error: %s'
+LOGIN_SUCCESS = 'Signed message verified, access authorized'
+LOGIN_FAILED = 'Signed message failed validation or access unauthorized'
 
 # DB related messages
 DB_SUCCESS = 'Database transaction completed successfully'
