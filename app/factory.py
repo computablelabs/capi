@@ -36,7 +36,7 @@ def create_app(app_name=a_name, **kwargs):
     # allow swagger to actually work when deployed
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
     # Setup the Flask-JWT-Extended extension
-    jwt = JWTManager(app)
+    JWTManager(app)
 
     # setup any global before-request type calls
     # NOTE if restplus gets these per-namespace -> move them. currently not avail...
