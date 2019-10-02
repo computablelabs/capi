@@ -1,4 +1,4 @@
-from flask import g, current_app
+from flask import current_app, g
 from flask_restplus import Namespace, Resource
 from celery import uuid
 from celery.result import AsyncResult
@@ -6,17 +6,18 @@ from celery.exceptions import TimeoutError as Timeout
 from core.protocol import is_registered
 import core.constants as C
 from apis.tasks import wait_for_mining
-from .parsers import task_parser, new_task
-from .serializers import TaskResult
+from .parsers import new_task, task_parser
+from .serializers import NewTaskResult, TaskResult
 
 api = Namespace('Tasks', description='Operations pertaining to celery asyncronous tasks')
 
+api.models['NewTaskResult'] = NewTaskResult
 api.models['TaskResult'] = TaskResult
 
 @api.route('/', methods=['POST'])
 class NewTaskRoute(Resource):
     @api.expect(new_task)
-    @api.marshal_with(TaskResult)
+    @api.marshal_with(NewTaskResult)
     @api.response(201, C.CELERY_TASK_CREATED)
     @api.response(400, C.MISSING_PAYLOAD_DATA)
     @api.response(500, C.SERVER_ERROR)
