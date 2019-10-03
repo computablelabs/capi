@@ -3,6 +3,7 @@ from flask_restplus import Namespace, Resource
 from celery import uuid
 from celery.result import AsyncResult
 from celery.exceptions import TimeoutError as Timeout
+from app import celery as celery_app
 from core.protocol import is_registered
 import core.constants as C
 from apis.tasks import wait_for_mining
@@ -91,4 +92,4 @@ class TaskRoute(Resource):
         """
         Abstraction for fetching the actual celery task, easy to mock.
         """
-        return AsyncResult(id, backend=current_app.config['CELERY_RESULT_BACKEND'])
+        return AsyncResult(id, app=celery_app)
