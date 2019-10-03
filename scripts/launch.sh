@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cd /app
-python run.py && celery -A celery_worker.celery worker --loglevel=info
+(celery -A celery_worker.celery worker --loglevel=info &) && python run.py
