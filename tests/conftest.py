@@ -7,6 +7,7 @@ from moto import mock_dynamodb2, mock_s3
 from app import celery as c
 from app.factory import create_app
 from web3 import Web3
+from eth_keys import keys
 from core.protocol import set_w3
 from core.dynamo import set_dynamo_table
 from core.s3 import set_s3_client
@@ -20,23 +21,35 @@ from computable.contracts import Datatrust
 from computable.contracts import Listing
 from computable.helpers.transaction import transact
 
-# setup deployed protocol
 @pytest.fixture(scope="module")
 def test_provider():
     return Web3.EthereumTesterProvider()
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def w3(test_provider):
     instance = Web3(test_provider)
     instance.eth.defaultAccount = instance.eth.accounts[0]
     return instance
 
+# on occassion we may need a user with a private key to test
+@pytest.fixture(scope='module')
+def passphrase():
+    return 'im.a.lumberjack'
+
+@pytest.fixture(scope='module')
+def pk():
+    return keys.PrivateKey(b'\x01' * 32)
+
+@pytest.fixture(scope='module')
+def user(w3, pk, passphrase):
+    return w3.geth.personal.importRawKey(pk.to_hex(), passphrase)
+
 # TODO this will be removed when computable.py updates next (contract changes, no args for ether_token construction)
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def ether_token_opts():
     return {'init_bal': Web3.toWei(4, 'ether')}
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def ether_token(w3, ether_token_opts):
     # this might be kind of a hack - but its a damn cool one
     contract_path = os.path.join(computable.__path__[0], 'contracts')
