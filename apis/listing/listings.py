@@ -9,10 +9,10 @@ from core.protocol import is_registered
 from core.dynamo import get_listings
 from apis.serializers import Listing, Listings
 from apis.parsers import from_block_owner, parse_from_block_owner
-from apis.helpers import listing_hash_join
+from apis.helpers import extract_listing_hashes, listing_hash_join
 from .serializers import NewListing
 from .parsers import listing_parser
-from .helpers import filter_listed
+from .helpers import filter_listed, filter_listing_removed
 from .tasks import send_data_hash_after_mining
 
 api = Namespace('Listings', description='Operations pertaining to the Computable Protocol Listing Object')
@@ -32,13 +32,18 @@ class ListingsRoute(Resource):
         # TODO implement paging
         args = parse_from_block_owner(from_block_owner.parse_args())
         # protocol stuff... TODO handle blockchain reverts
-        events = filter_listed(args['from_block'], args['filters'])
-        # TODO any filtering for dynamo?
-        everything = get_listings()
-        current_app.logger.debug('retrieved listings from db')
-        it, tb = listing_hash_join(events, everything)
+        current_app.logger.info(f'Fetching listings from block {args["from_block"]}')
+        # use this list to filter by so that we only return live listings
+        removed = filter_listing_removed(args['from_block'], args['filters'])
+        # we need the hashes themselves to pass as a filter_by to ...join
+        removed_hashes = extract_listing_hashes(removed) # not using the to_block on removed
 
-        current_app.logger.info(f'Returning listings from block {args["from_block"]} to block {tb}')
+        listed = filter_listed(args['from_block'], args['filters'])
+        # TODO any filtering for dynamo?
+        all_the_dynamo = get_listings()
+        current_app.logger.debug('retrieved listings from db')
+        # filter out any removed by passing them
+        it, tb = listing_hash_join(listed, all_the_dynamo, removed_hashes)
 
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
 
