@@ -5,7 +5,7 @@ from apis.serializers import Listing, Listings
 from apis.parsers import from_block_owner, parse_from_block_owner
 from .parsers import parse_candidates_by_kind
 from .serializers import Candidates
-from .helpers import filter_candidate_added
+from .helpers import filter_candidate_added, filter_candidate_removed
 from core.dynamo import get_listings
 
 api = Namespace('Candidates', description='Operations pertaining to the Computable Protocol Candidate Object')
