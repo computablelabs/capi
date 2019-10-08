@@ -34,7 +34,7 @@ class ListingsRoute(Resource):
         # protocol stuff... TODO handle blockchain reverts
         current_app.logger.info(f'Fetching listings from block {args["from_block"]}')
         # use this list to filter by so that we only return live listings
-        removed = filter_listing_removed(args['from_block'], args['filters'])
+        removed = filter_listing_removed(args['from_block'])
         # we need the hashes themselves to pass as a filter_by to ...join
         removed_hashes = extract_listing_hashes(removed) # not using the to_block on removed
 

@@ -28,8 +28,8 @@ class CandidatesRoute(Resource):
         # TODO handle blockchain reverts
         current_app.logger.info(f'Fetching candidates from block {args["from_block"]}')
 
-        # use this list to filter by so that we only return live candidates
-        removed = filter_candidate_removed(args['from_block'], args['filters'])
+        # use this list to filter by so that we only return live candidates. ...removed has no filters
+        removed = filter_candidate_removed(args['from_block'])
         removed_hashes = extract_listing_hashes(removed) # not using the to_block on removed
 
         added  = filter_candidate_added(args['from_block'], args['filters'])
@@ -54,8 +54,8 @@ class ListingCandidatesRoute(Resource):
         # TODO handle blockchain reverts
         current_app.logger.info(f'Fetching applications from block {args["from_block"]}')
 
-        # listing_hash_join can take a list to filter by (exclusionary)
-        removed = filter_candidate_removed(args['from_block'], args['filters'])
+        # listing_hash_join can take a list to filter by (exclusionary). ...removed has no filters
+        removed = filter_candidate_removed(args['from_block'])
         removed_hashes = extract_listing_hashes(removed)
 
         added = filter_candidate_added(args['from_block'], args['filters'])
@@ -83,7 +83,7 @@ class CandidatesByKindRoute(Resource):
         # TODO handle blockchain reverts
         current_app.logger.info(f'Fetching candidates of type {type} from block {args["from_block"]}')
 
-        removed = filter_candidate_removed(args['from_block'], args['filters'])
+        removed = filter_candidate_removed(args['from_block'])
         removed_hashes = extract_listing_hashes(removed) # not using the to_block on removed
 
         added  = filter_candidate_added(args['from_block'], args['filters'])
