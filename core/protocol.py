@@ -9,6 +9,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from computable.contracts import Voting, Datatrust, Listing
 from computable.helpers.transaction import call
+from .helpers import set_gas_prices, send_or_transact
 
 def set_w3(w3=None):
     """
@@ -62,3 +63,29 @@ def is_registered():
     """
     address = get_backend_address()
     return address == current_app.config['PUBLIC_KEY']
+
+def get_delivery(delivery_hash):
+    """
+    Returns owner, bytes_requested, and bytes_delivered for a delivery
+    """
+    d = get_datatrust()
+    delivery = call(d.get_delivery(delivery_hash))
+    return delivery
+
+def listing_accessed(delivery_hash, listing, amount):
+    """
+    Commit to protocol the listing accessed details
+    """
+    d = get_datatrust()
+    tx = send_or_transact(d.listing_accessed(listing, delivery_hash, amount))
+    # TODO: seems like we should be waiting here for the transaction to be mined before delivering content to the buyer
+    rct = g.w3.eth.waitForTransactionReceipt(tx)
+
+def delivered(delivery_hash, url):
+    """
+    Mark the delivery as complete in protocol
+    """
+    d = get_datatrust()
+    tx = send_or_transact(d.delivered(delivery_hash, url))
+    # TODO: seems like we should be waiting here for the transaction to be mined before delivering content to the buyer
+    rct = g.w3.eth.waitForTransactionReceipt(tx)
