@@ -1,11 +1,11 @@
 from flask import g, current_app
 from flask_restplus import Namespace, Resource
-from apis.helpers import extract_listing_hashes, listing_hash_join
+from apis.helpers import extract_listing_hashes, extract_listing_hashes_to_block, listing_hash_join
 from apis.serializers import Listing, Listings
 from apis.parsers import from_block_owner, parse_from_block_owner
 from .parsers import parse_candidates_by_kind
 from .serializers import Candidates
-from .helpers import filter_candidate_added
+from .helpers import filter_candidate_added, filter_candidate_removed
 from core.dynamo import get_listings
 
 api = Namespace('Candidates', description='Operations pertaining to the Computable Protocol Candidate Object')
@@ -26,11 +26,17 @@ class CandidatesRoute(Resource):
         # TODO implement paging?
         args = parse_from_block_owner(from_block_owner.parse_args())
         # TODO handle blockchain reverts
-        events = filter_candidate_added(args['from_block'], args['filters'])
-        # /candidates simply returns the hashes as a list
-        it, tb = extract_listing_hashes(events)
+        current_app.logger.info(f'Fetching candidates from block {args["from_block"]}')
 
-        return dict(items=it, from_block=args['from_block'], to_block=tb), 200
+        # use this list to filter by so that we only return live candidates. ...removed has no filters
+        removed = filter_candidate_removed(args['from_block'])
+        removed_hashes = extract_listing_hashes(removed) # not using the to_block on removed
+
+        added  = filter_candidate_added(args['from_block'], args['filters'])
+        added_hashes, tb = extract_listing_hashes_to_block(added, removed_hashes)
+
+        # /candidates simply returns the filtered list. NOTE we return the to_block from the added event
+        return dict(items=added_hashes, from_block=args['from_block'], to_block=tb), 200
 
 @api.route('/application', methods=['GET'])
 class ListingCandidatesRoute(Resource):
@@ -44,14 +50,20 @@ class ListingCandidatesRoute(Resource):
         """
         # TODO implement paging?
         args = parse_candidates_by_kind(from_block_owner.parse_args(), 'application')
-        # TODO handle blockchain reverts
-        events = filter_candidate_added(args['from_block'], args['filters'])
-        everything = get_listings()
-        current_app.logger.debug('retrieved candidates from db')
-        # now filter everything by the actual hashes...
-        it, tb = listing_hash_join(events, everything)
 
-        current_app.logger.info(f'Returning candidates from block {args["from_block"]} to {tb}')
+        # TODO handle blockchain reverts
+        current_app.logger.info(f'Fetching applications from block {args["from_block"]}')
+
+        # listing_hash_join can take a list to filter by (exclusionary). ...removed has no filters
+        removed = filter_candidate_removed(args['from_block'])
+        removed_hashes = extract_listing_hashes(removed)
+
+        added = filter_candidate_added(args['from_block'], args['filters'])
+        all_the_dynamo = get_listings()
+        current_app.logger.debug('retrieved candidates from db')
+        # now reduce everything to the actual result (use removed to filter)
+        it, tb = listing_hash_join(added, all_the_dynamo, removed_hashes)
+
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
 
 # NOTE: type and kind used interchangeably as reserved keywords are dumb...
@@ -65,15 +77,16 @@ class CandidatesByKindRoute(Resource):
         """
         Fetch and return all candidates of the given kind, optionally filtered from a given block number.
         """
+
         # TODO implement paging?
         args = parse_candidates_by_kind(from_block_owner.parse_args(), type)
         # TODO handle blockchain reverts
-        events = filter_candidate_added(args['from_block'], args['filters'])
-        everything = get_listings()
-        current_app.logger.debug('retrieved candidates from db')
-        # simply returns the hashes as a list
-        it, tb = extract_listing_hashes(events)
+        current_app.logger.info(f'Fetching candidates of type {type} from block {args["from_block"]}')
 
-        current_app.logger.info(f'Returning candidates of type {type} from block {args["from_block"]} to {tb}')
+        removed = filter_candidate_removed(args['from_block'])
+        removed_hashes = extract_listing_hashes(removed) # not using the to_block on removed
 
-        return dict(items=it, from_block=args['from_block'], to_block=tb), 200
+        added  = filter_candidate_added(args['from_block'], args['filters'])
+        added_hashes, tb = extract_listing_hashes_to_block(added, removed_hashes)
+
+        return dict(items=added_hashes, from_block=args['from_block'], to_block=tb), 200

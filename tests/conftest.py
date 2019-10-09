@@ -21,7 +21,7 @@ from computable.contracts import Datatrust
 from computable.contracts import Listing
 from computable.helpers.transaction import transact
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='module')
 def test_provider():
     return Web3.EthereumTesterProvider()
 
