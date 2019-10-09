@@ -74,4 +74,4 @@ def do_resolution(hash, gas_price):
     tx = send_or_transact(args)
     rct = g.w3.eth.waitForTransactionReceipt(tx)
 
-    click.echo(C.RESOLVED % g.w3.toHex(hash))
+    click.echo(C.RESOLVED % hash)

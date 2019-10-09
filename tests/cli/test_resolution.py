@@ -40,7 +40,9 @@ def test_resolve(w3, voting, parameterizer_opts, datatrust, ctx):
 
     # now resolve it
     runner = current_app.test_cli_runner()
-    result = runner.invoke(args=['admin', 'resolution_test', '--hash', reg_hash])
+
+    #pass a string like cli does
+    result = runner.invoke(args=['admin', 'resolution_test', '--hash', w3.toHex(reg_hash)])
     assert (RESOLVED % w3.toHex(reg_hash)) in result.output
 
 def test_was_actually_resolved(w3, voting, ctx):
