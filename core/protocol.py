@@ -70,7 +70,10 @@ def get_delivery(delivery_hash):
     """
     d = get_datatrust()
     delivery = call(d.get_delivery(delivery_hash))
-    return delivery
+    owner = delivery[0]
+    requested = delivery[1]
+    delivered = delivery[2]
+    return owner, requested, delivery
 
 def listing_accessed(delivery_hash, listing, amount):
     """
@@ -78,14 +81,10 @@ def listing_accessed(delivery_hash, listing, amount):
     """
     d = get_datatrust()
     tx = send_or_transact(d.listing_accessed(listing, delivery_hash, amount))
-    # TODO: seems like we should be waiting here for the transaction to be mined before delivering content to the buyer
-    rct = g.w3.eth.waitForTransactionReceipt(tx)
-
+ 
 def delivered(delivery_hash, url):
     """
     Mark the delivery as complete in protocol
     """
     d = get_datatrust()
     tx = send_or_transact(d.delivered(delivery_hash, url))
-    # TODO: seems like we should be waiting here for the transaction to be mined before delivering content to the buyer
-    rct = g.w3.eth.waitForTransactionReceipt(tx)

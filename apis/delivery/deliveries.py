@@ -7,23 +7,25 @@ from .parsers import delivery_parser
 
 api = Namespace('Delivery', description='Delivery endpoint for requesting purchased payloads')
 
-@api.route('/<string:delivery_hash>', methods=['GET'])
+@api.route('/', methods=['GET'])
 class Delivery(Resource):
     @api.expect(delivery_parser)
     @api.response(200, C.CONTENT_DELIVERED)
     @api.response(401, C.LOGIN_FAILED)
     @api.response(412, C.INSUFFICIENT_PURCHASED)
     @jwt_required
-    def get(self, delivery_hash):
+    def get(self):
         """
         Return the listing requested as a delivery object
         """
         args = delivery_parser.parse_args()
+        delivery_hash = args['delivery_hash']
         owner = get_jwt_identity()
         current_app.logger.info(f'Retrieving {delivery_hash} for delivery')
-        authorized_delivery = [delivery_hash, 14, 0]
-        # delivery_owner = authorized_delivery[0]
-        delivery_owner = owner # temp workaround until I figure out request_delivery
+        authorized_delivery = get_delivery(delivery_hash)
+        delivery_owner = authorized_delivery[0]
+        requested_bytes = authorized_delivery[1]
+        delivered_bytes = authorized_delivery[2]
         listing = args['listing_hash']
         if delivery_owner == owner:
             bytes_purchased = authorized_delivery[1]
@@ -38,6 +40,7 @@ class Delivery(Resource):
                 )
                 # We have the file from S3, mark it as accessed and delivered
                 listing_accessed(delivery_hash, listing, listing_bytes)
+                current_app.logger.info(f'{owner} used {listing_bytes} bytes accessing {listing}')
                 delivery_url = g.w3.keccak(text=f"{current_app.config['DNS_NAME']}/deliveries/{delivery_hash}")
                 delivered(delivery_hash, delivery_url)
                 mimetype = self.get_mimetype(listing)
