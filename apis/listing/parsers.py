@@ -2,8 +2,9 @@ from flask_restplus import reqparse
 from werkzeug.datastructures import FileStorage
 
 listing_parser = reqparse.RequestParser(bundle_errors=True)
-listing_parser.add_argument('file', type=FileStorage, location='files', required=False, help='Listing asset')
+listing_parser.add_argument('listing_hash', type=str, required=True, location='form', help='Unique identifier, as stored on-chain, for this listing')
 listing_parser.add_argument('tx_hash', type=str, required=True, location='form', help='Transaction hash from client calling listing contract list method')
+listing_parser.add_argument('file', type=FileStorage, location='files', required=False, help='Listing asset')
 listing_parser.add_argument('title', type=str, required=True, location='form', help='Title of upload')
 listing_parser.add_argument('description', type=str, required=True, location='form', help='Description of upload')
 listing_parser.add_argument('owner', type=str, required=False, location='form', help='Owner of the upload')
