@@ -108,7 +108,7 @@ def test_approve_datatrust_spending(w3, ether_token, datatrust, user):
     approved_amt = call(ether_token.allowance(buyer, datatrust.address))
     assert approved_amt == w3.toWei(5, 'ether')
 
-def test_no_approved_funds_returns_http412(w3, datatrust, s3_client, user, pk, test_client):
+def test_no_approved_funds_returns_http412(w3, datatrust, dynamo_table, s3_client, user, pk, test_client):
     buyer = w3.eth.accounts[10]
     listing_hash = w3.keccak(text='cheap warez')
     file_contents = 'all the cheap warez, pay for shipping and handling only'
@@ -152,7 +152,7 @@ def test_no_approved_funds_returns_http412(w3, datatrust, s3_client, user, pk, t
         '/deliveries/',
         query_string={
             'delivery_hash': w3.toHex(delivery_hash),
-            'listing_hash': w3.toHex(listing_hash)
+            'query': w3.toHex(listing_hash)
         },
         headers=headers
     )
@@ -213,7 +213,7 @@ def test_successful_delivery(w3, datatrust, ether_token, parameterizer_opts, pk,
         '/deliveries/',
         query_string={
             'delivery_hash': w3.toHex(delivery_hash),
-            'listing_hash': w3.toHex(listing_hash)
+            'query': w3.toHex(listing_hash)
         },
         headers=headers
     )
