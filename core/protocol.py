@@ -69,11 +69,7 @@ def get_delivery(delivery_hash):
     Returns owner, bytes_requested, and bytes_delivered for a delivery
     """
     d = get_datatrust()
-    delivery = call(d.get_delivery(delivery_hash))
-    owner = delivery[0]
-    requested = delivery[1]
-    delivered = delivery[2]
-    return owner, requested, delivery
+    return call(d.get_delivery(delivery_hash))
 
 def listing_accessed(delivery_hash, listing, amount):
     """
@@ -88,3 +84,10 @@ def delivered(delivery_hash, url):
     """
     d = get_datatrust()
     tx = send_or_transact(d.delivered(delivery_hash, url))
+
+def get_bytes_purchased(address):
+    """
+    Return the number of bytes purchased by the address
+    """
+    d = get_datatrust()
+    return call(d.get_bytes_purchased(address))

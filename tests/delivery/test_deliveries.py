@@ -158,7 +158,8 @@ def test_no_approved_funds_returns_http412(w3, datatrust, s3_client, user, pk, t
     )
     assert delivery.status_code == 412
 
-def test_successful_delivery(w3, datatrust, pk, user, dynamo_table, s3_client, test_client):
+def test_successful_delivery(w3, datatrust, ether_token, parameterizer_opts, pk, user, dynamo_table, s3_client, test_client):
+    initial_balance = call(ether_token.balance_of(datatrust.address))
     # Add the listing to dynamo
     buyer = w3.eth.accounts[10]
     listing_hash = w3.keccak(text='a_witch')
@@ -225,3 +226,10 @@ def test_successful_delivery(w3, datatrust, pk, user, dynamo_table, s3_client, t
     assert delivery.headers['Content-Type'] == mimetype
     assert int(delivery.headers['Content-Length']) == amount
     assert delivery.data == file_contents.encode()
+
+    # Datatrust must get paid
+    cost_per_byte = parameterizer_opts['cost_per_byte']
+    backend_payment = parameterizer_opts['backend_payment']
+    final_balance = call(ether_token.balance_of(datatrust.address))
+    datatrust_payment = (amount * cost_per_byte * backend_payment) / 100
+    assert final_balance - initial_balance == datatrust_payment

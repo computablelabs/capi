@@ -2,7 +2,7 @@ from flask import request, g, current_app, send_file
 from flask_restplus import Namespace, Resource
 from flask_jwt_extended import jwt_required, decode_token, get_jwt_identity
 from core import constants as C
-from core.protocol import get_delivery, listing_accessed, delivered
+from core.protocol import get_delivery, listing_accessed, delivered, get_bytes_purchased
 from .parsers import delivery_parser
 
 api = Namespace('Delivery', description='Delivery endpoint for requesting purchased payloads')
@@ -22,13 +22,10 @@ class Delivery(Resource):
         delivery_hash = args['delivery_hash']
         owner = get_jwt_identity()
         current_app.logger.info(f'Retrieving {delivery_hash} for delivery')
-        authorized_delivery = get_delivery(delivery_hash)
-        delivery_owner = authorized_delivery[0]
-        requested_bytes = authorized_delivery[1]
-        delivered_bytes = authorized_delivery[2]
+        delivery_owner, requested_bytes, delivered_bytes = get_delivery(delivery_hash)
         listing = args['listing_hash']
         if delivery_owner == owner:
-            bytes_purchased = authorized_delivery[1]
+            bytes_purchased = get_bytes_purchased(owner)
             listing_bytes = self.listing_bytes(listing)
             if bytes_purchased >= listing_bytes:
                 tmp_file = f'/tmp/{delivery_hash}'
@@ -41,7 +38,7 @@ class Delivery(Resource):
                 # We have the file from S3, mark it as accessed and delivered
                 listing_accessed(delivery_hash, listing, listing_bytes)
                 current_app.logger.info(f'{owner} used {listing_bytes} bytes accessing {listing}')
-                delivery_url = g.w3.keccak(text=f"{current_app.config['DNS_NAME']}/deliveries/{delivery_hash}")
+                delivery_url = g.w3.keccak(text=f"{current_app.config['DNS_NAME']}/deliveries/?delivery_hash={delivery_hash}&listing_hash={listing}")
                 delivered(delivery_hash, delivery_url)
                 mimetype = self.get_mimetype(listing)
                 #TODO: stream this from s3 rather than downloading then streaming
