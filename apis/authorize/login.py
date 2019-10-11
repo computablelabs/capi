@@ -49,8 +49,10 @@ class Login(Resource):
             refresh_token = create_refresh_token(identity=key)
 
             if is_authorized(msg, sig, key):
+                current_app.logger.info(C.LOGIN_SUCCESS)
                 return dict(message=C.LOGIN_SUCCESS, access_token=access_token, refresh_token=refresh_token), 200
             else:
+                current_app.logger.error(C.LOGIN_FAILED)
                 api.abort(401, C.LOGIN_FAILED)
         else:
             current_app.logger.warning(C.MISSING_PAYLOAD_DATA)

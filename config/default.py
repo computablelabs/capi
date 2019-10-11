@@ -11,3 +11,5 @@ LOG_LEVEL = 'INFO'
 REGION = 'us-west-1'
 # JWT
 EXPIRES_IN_DAYS = 1
+# App-specific
+TMP_FILE_STORAGE = '/tmp/'
