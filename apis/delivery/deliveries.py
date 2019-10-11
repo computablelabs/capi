@@ -38,7 +38,7 @@ class Delivery(Resource):
                 # We have the file from S3, mark it as accessed and delivered
                 listing_accessed(delivery_hash, listing, listing_bytes)
                 current_app.logger.info(f'{owner} used {listing_bytes} bytes accessing {listing}')
-                delivery_url = g.w3.keccak(text=f"{current_app.config['DNS_NAME']}/deliveries/?delivery_hash={delivery_hash}&listing_hash={listing}")
+                delivery_url = g.w3.keccak(text=f"{current_app.config['DNS_NAME']}/deliveries/?delivery_hash={delivery_hash}")
                 delivered(delivery_hash, delivery_url)
                 mimetype = self.get_mimetype(listing)
                 #TODO: stream this from s3 rather than downloading then streaming
