@@ -9,4 +9,4 @@ def is_authorized(msg, sig, key):
     @param key: hash signer's public key
     """
     actual = g.w3.eth.account.recover_message(encode_defunct(text=msg), signature=sig)
-    return actual == key
+    return actual.lower() == key.lower()
