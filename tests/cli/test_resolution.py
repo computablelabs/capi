@@ -4,10 +4,8 @@ from core.constants import RESOLVED
 from computable.helpers.transaction import call, transact
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance, time_travel
 
-# datatrust, voter = accounts 2 and 3
-
 def test_setup_registration_candidate(w3, ether_token, market_token, voting, parameterizer_opts, parameterizer, reserve, datatrust, ctx):
-    user = w3.eth.accounts[2]
+    user = w3.eth.defaultAccount 
     user_bal = call(ether_token.balance_of(user))
     assert user_bal == 0
 
@@ -45,9 +43,9 @@ def test_setup_registration_candidate(w3, ether_token, market_token, voting, par
     assert rct['status'] == 1
     logs = reserve.deployed.events.Supported().processReceipt(rct)
     cmt_user_bal = call(market_token.balance_of(user))
-    assert cmt_user_bal == w3.toWei(10, 'milliether')
+    assert cmt_user_bal >= w3.toWei(10, 'milliether')
     new_supply = call(market_token.total_supply())
-    assert new_supply == total_supply + cmt_user_bal
+    assert new_supply == total_supply + w3.toWei(10, 'milliether')
 
     stake = call(parameterizer.get_stake())
     assert stake <= cmt_user_bal
@@ -60,12 +58,8 @@ def test_setup_registration_candidate(w3, ether_token, market_token, voting, par
     assert rct['status'] == 1
     new_mkt_allowance = call(market_token.allowance(user, voting.address))
     assert new_mkt_allowance == w3.toWei(10, 'milliether')
-
     assert stake <= new_mkt_allowance
  
-    print("current_app.config['DNS_NAME']")
-    print(current_app.config['DNS_NAME'])
-
     tx = transact(datatrust.register(current_app.config['DNS_NAME'], {'from': user, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     rct = w3.eth.waitForTransactionReceipt(tx)
 

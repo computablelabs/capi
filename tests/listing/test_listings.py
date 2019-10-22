@@ -10,8 +10,64 @@ from apis.listing.tasks import send_data_hash_after_mining
 
 # OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,0]
 
-def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, datatrust):
-    tx = transact(datatrust.register(current_app.config['DNS_NAME'], {'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
+def test_register_and_confirm(w3, ether_token, market_token, voting, parameterizer_opts, parameterizer, reserve, datatrust, ctx):
+    user = w3.eth.defaultAccount 
+    user_bal = call(ether_token.balance_of(user))
+    assert user_bal == 0
+
+    # Deposit ETH in EtherToken
+    tx = transact(ether_token.deposit(
+        w3.toWei(10, 'ether'), {'from': user}))
+    rct = w3.eth.waitForTransactionReceipt(tx)
+    new_user_bal = call(ether_token.balance_of(user))
+    assert new_user_bal == w3.toWei(10, 'ether')
+    assert rct['status'] == 1
+
+    # Approve the spend
+    old_allowance = call(ether_token.allowance(user, reserve.address))
+    assert old_allowance == 0
+    tx= transact(ether_token.approve(reserve.address, w3.toWei(10, 'ether'), opts={'from': user}))
+    rct = w3.eth.waitForTransactionReceipt(tx)
+    assert rct['status'] == 1
+    new_allowance = call(ether_token.allowance(user, reserve.address))
+    assert new_allowance == w3.toWei(10, 'ether')
+
+    # Perform pre-checks for support 
+    support_price = call(reserve.get_support_price())
+    assert new_user_bal >= support_price
+    assert new_allowance >= new_user_bal
+    minted = (new_user_bal // support_price) * 10**9
+    assert minted == 10**7 * w3.toWei(1, 'gwei')
+    priv = call(market_token.has_privilege(reserve.address))
+    assert priv == True
+    total_supply = call(market_token.total_supply())
+    assert total_supply == w3.toWei(4, 'ether')
+
+    # Call support
+    tx = transact(reserve.support(new_user_bal, opts={'gas': 1000000, 'from': user}))
+    rct = w3.eth.waitForTransactionReceipt(tx)
+    assert rct['status'] == 1
+    logs = reserve.deployed.events.Supported().processReceipt(rct)
+    cmt_user_bal = call(market_token.balance_of(user))
+    # There is the creator already
+    assert cmt_user_bal >= w3.toWei(10, 'milliether')
+    new_supply = call(market_token.total_supply())
+    assert new_supply == total_supply + w3.toWei(10, 'milliether')
+
+    stake = call(parameterizer.get_stake())
+    assert stake <= cmt_user_bal
+
+    # Approve the market token allowance
+    old_mkt_allowance = call(market_token.allowance(user, voting.address))
+    assert old_mkt_allowance == 0
+    tx = transact(market_token.approve(voting.address, w3.toWei(10, 'milliether'), opts={'from': user}))
+    rct = w3.eth.waitForTransactionReceipt(tx)
+    assert rct['status'] == 1
+    new_mkt_allowance = call(market_token.allowance(user, voting.address))
+    assert new_mkt_allowance == w3.toWei(10, 'milliether')
+    assert stake <= new_mkt_allowance
+
+    tx = transact(datatrust.register(current_app.config['DNS_NAME'], {'from': user, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     rct = w3.eth.waitForTransactionReceipt(tx)
 
     reg_hash = w3.keccak(text=current_app.config['DNS_NAME'])
@@ -51,9 +107,10 @@ def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, data
 
     # datatrust should be official
     addr = call(datatrust.get_backend_address())
-    assert addr == w3.eth.defaultAccount
+    assert addr == user 
 
 def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, listing, test_client, dynamo_table, s3_client):
+    user = w3.eth.defaultAccount 
     # needs to be a candidate first...
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='testytest123')
@@ -69,7 +126,7 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     # the registered datatrust needs to set the data hash
     data_hash = w3.keccak(text='datanadmoardata')
     dtx = transact(datatrust.set_data_hash(listing_hash, data_hash,
-        {'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
+        {'from': user, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     drct = w3.eth.waitForTransactionReceipt(dtx)
     # the data hash must be set or the listing will fail
     # TODO computable.py needs to implement get_data_hash
@@ -164,6 +221,7 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
     content_type='multipart/form-data',
     data=test_payload)
 
+    # TODO: possibly a user swap error?
     mock_send.assert_called_once_with(
         w3.toHex(tx),
         w3.toHex(listing_hash),

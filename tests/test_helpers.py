@@ -51,7 +51,7 @@ def test_maybe_increase_market_token_allowance(w3, market_token, voting):
     allowed = call(market_token.allowance(user, voting.address))
     assert allowed == one_gwei
 
-def test_extract_listing_hashes(logs):
+def test_extract_listing_hashes(logs, ctx):
     extracted = extract_listing_hashes(logs)
     assert len(extracted) == 3
 
