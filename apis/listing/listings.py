@@ -7,7 +7,7 @@ from celery import uuid
 from core import constants as C
 from core.protocol import is_registered
 from core.dynamo import get_listings
-from apis.serializers import Listing, Listings
+from apis.serializers import Listing, Listings, file_size_in_s3
 from apis.parsers import from_block_owner, parse_from_block_owner
 from apis.helpers import extract_listing_hashes, listing_hash_join
 from .serializers import NewListing
@@ -44,6 +44,8 @@ class ListingsRoute(Resource):
         current_app.logger.debug('retrieved listings from db')
         # filter out any removed by passing them
         it, tb = listing_hash_join(listed, all_the_dynamo, removed_hashes)
+        for item in it:
+            item['size'] = file_size_in_s3(item['listing_hash'])
 
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
 

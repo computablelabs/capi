@@ -53,7 +53,7 @@ def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, data
     addr = call(datatrust.get_backend_address())
     assert addr == w3.eth.defaultAccount
 
-def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, listing, test_client, dynamo_table):
+def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, listing, test_client, dynamo_table, s3_client):
     # needs to be a candidate first...
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='testytest123')
@@ -120,12 +120,21 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
 
     g.table.put_item(Item=row)
 
+    # store in S3
+    file_contents = 'so many catz #lolz #hashtag #9000 #allthecatz'
+    s3_object = g.s3.put_object(
+        Body=file_contents,
+        Bucket=current_app.config['S3_DESTINATION'],
+        Key=w3.toHex(listing_hash)
+    )
+
     listings = test_client.get('/listings/')
     payload = json.loads(listings.data)
     assert listings.status_code == 200
     assert payload['from_block'] == 0
     assert payload['items'][0]['listing_hash'] == w3.toHex(listing_hash) # payload hashes are hex
     assert payload['items'][0]['title'] == 'lol catz 9000'
+    assert payload['items'][0]['size'] == len(file_contents.encode('utf-8'))
     assert payload['to_block'] > 0
 
 @patch('apis.listing.listings.ListingsRoute.send_data_hash')
