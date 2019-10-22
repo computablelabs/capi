@@ -11,13 +11,6 @@ from computable.helpers.transaction import call
 
 admin = Blueprint('admin', __name__)
 
-@admin.cli.command('support_test', with_appcontext=False)
-# We will default an omitted gas price to 2 gwei TODO set something else?
-@click.option('--gas_price', type=int, default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')
-def support_test(gas_price):
-    do_support(gas_price)
-
-
 @admin.cli.command('registration_test', with_appcontext=False)
 # We will default an omitted gas price to 2 gwei TODO set something else?
 @click.option('--gas_price', type=int, default=2, help='An int, representing GWEI, that will be set as gas_price for this transaction')

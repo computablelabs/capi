@@ -221,7 +221,6 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
     content_type='multipart/form-data',
     data=test_payload)
 
-    # TODO: possibly a user swap error?
     mock_send.assert_called_once_with(
         w3.toHex(tx),
         w3.toHex(listing_hash),
