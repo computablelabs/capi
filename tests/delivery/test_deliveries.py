@@ -294,4 +294,3 @@ def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk,
     with pytest.raises(FileNotFoundError) as exc:
         listing_file = f'{current_app.config["TMP_FILE_STORAGE"]}{w3.toHex(listing_hash)}'
         open(listing_file, 'r')
-

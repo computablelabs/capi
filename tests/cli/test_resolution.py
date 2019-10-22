@@ -69,8 +69,8 @@ def test_setup_registration_candidate(w3, ether_token, market_token, voting, par
     is_candidate = call(voting.is_candidate(reg_hash))
     assert is_candidate == True
 
-    # we'll use acct 3 as voter, will likely need market token...
-    voter = w3.eth.accounts[3]
+    # we'll use acct 2 as voter, will likely need market token...
+    voter = w3.eth.accounts[2]
     stake = parameterizer_opts['stake']
     trans_rct = maybe_transfer_market_token(w3, market_token, voter, stake)
     # will likely need to approve voting
