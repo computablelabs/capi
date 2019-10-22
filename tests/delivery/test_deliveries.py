@@ -233,3 +233,8 @@ def test_successful_delivery(w3, datatrust, ether_token, parameterizer_opts, pk,
     final_balance = call(ether_token.balance_of(datatrust.address))
     datatrust_payment = (amount * cost_per_byte * backend_payment) / 100
     assert final_balance - initial_balance == datatrust_payment
+
+    # Ensure downloaded file is removed from Docker container
+    with pytest.raises(FileNotFoundError) as exc:
+        listing_file = f'{current_app.config["TMP_FILE_STORAGE"]}{w3.toHex(listing_hash)}'
+        open(listing_file, 'r')
