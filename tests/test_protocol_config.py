@@ -75,9 +75,8 @@ def test_market_token_set_priv(market_token, reserve, listing):
 def test_voting_set_priv(voting, parameterizer, reserve, datatrust_pre, listing):
     tup = call(voting.get_privileged())
     assert tup[0] == parameterizer.address
-    assert tup[1] == reserve.address
-    assert tup[2] == datatrust_pre.address
-    assert tup[3] == listing.address
+    assert tup[1] == datatrust_pre.address
+    assert tup[2] == listing.address
 
 def test_datatrust_set_priv(datatrust, listing):
     addr = call(datatrust.get_privileged())

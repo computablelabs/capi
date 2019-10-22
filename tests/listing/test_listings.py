@@ -5,7 +5,7 @@ from unittest.mock import patch
 from flask import current_app, g
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
-from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval, time_travel
+from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance, time_travel
 from apis.listing.tasks import send_data_hash_after_mining
 
 # OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,0]
@@ -25,7 +25,7 @@ def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, data
     stake = parameterizer_opts['stake']
     trans_rct = maybe_transfer_market_token(w3, market_token, voter, stake)
     # will likely need to approve voting
-    app_rct = maybe_increase_market_token_approval(w3, market_token, voter, voting.address, stake)
+    app_rct = maybe_increase_market_token_allowance(w3, market_token, voter, voting.address, stake)
     # should be able to vote now
     vote_tx = transact(voting.vote(reg_hash, 1,
         {'from': voter, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
@@ -81,7 +81,7 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     stake = parameterizer_opts['stake']
     trans_rct = maybe_transfer_market_token(w3, market_token, voter, stake)
     # will likely need to approve voting
-    app_rct = maybe_increase_market_token_approval(w3, market_token, voter, voting.address, stake)
+    app_rct = maybe_increase_market_token_allowance(w3, market_token, voter, voting.address, stake)
     # should be able to vote now
     vote_tx = transact(voting.vote(listing_hash, 1,
         {'from': voter, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))

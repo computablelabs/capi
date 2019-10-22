@@ -23,9 +23,11 @@ for a guide.
 
 
 You can install the core requirements with `pip` (make sure this is
-the `pip` in your virtual environment though)
+the `pip` in your virtual environment though). 
 
 ```
+pip install awscli
+pip install boto3
 pip install -r requirements.txt
 ```
 You'll also need to run one additional command:

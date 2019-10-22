@@ -3,7 +3,7 @@ import json
 from eth_account.messages import encode_defunct
 from flask import current_app, g
 from computable.helpers.transaction import call, transact
-from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval, time_travel
+from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance, time_travel
 
 def test_jwt_required(test_client):
     delivery = test_client.get('/deliveries/')
@@ -23,7 +23,7 @@ def test_register_datatrust(w3, datatrust, voting, parameterizer_opts, market_to
     voter = w3.eth.accounts[2]
     stake = parameterizer_opts['stake']
     trans_rct = maybe_transfer_market_token(w3, market_token, voter, stake)
-    app_rct = maybe_increase_market_token_approval(w3, market_token, voter, voting.address, stake)
+    app_rct = maybe_increase_market_token_allowance(w3, market_token, voter, voting.address, stake)
     vote_tx = transact(voting.vote(reg_hash, 1,
         {'from': voter, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     vote_rct = w3.eth.waitForTransactionReceipt(vote_tx)
@@ -68,7 +68,7 @@ def test_create_listing(w3, listing, datatrust, parameterizer_opts, market_token
     voter = w3.eth.accounts[2]
     stake = parameterizer_opts['stake']
     trans_rct = maybe_transfer_market_token(w3, market_token, voter, stake)
-    app_rct = maybe_increase_market_token_approval(w3, market_token, voter, voting.address, stake)
+    app_rct = maybe_increase_market_token_allowance(w3, market_token, voter, voting.address, stake)
     vote_tx = transact(voting.vote(listing_hash, 1,
         {'from': voter, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     vote_rct = w3.eth.waitForTransactionReceipt(vote_tx)

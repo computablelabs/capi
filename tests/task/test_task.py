@@ -5,7 +5,7 @@ from unittest.mock import patch
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
 import core.constants as C
-from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval, time_travel
+from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance, time_travel
 
 class MockTask:
     status=None
@@ -92,7 +92,7 @@ def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, data
     stake = parameterizer_opts['stake']
     trans_rct = maybe_transfer_market_token(w3, market_token, voter, stake)
     # will likely need to approve voting
-    app_rct = maybe_increase_market_token_approval(w3, market_token, voter, voting.address, stake)
+    app_rct = maybe_increase_market_token_allowance(w3, market_token, voter, voting.address, stake)
     # should be able to vote now
     vote_tx = transact(voting.vote(reg_hash, 1,
         {'from': voter, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
