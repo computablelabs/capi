@@ -1,4 +1,5 @@
-from flask import request, g, current_app, send_file
+import os
+from flask import request, g, current_app, send_file, after_this_request
 from flask_restplus import Namespace, Resource
 from flask_jwt_extended import jwt_required, decode_token, get_jwt_identity
 from core import constants as C
@@ -31,7 +32,7 @@ class Delivery(Resource):
 
             bytes_purchased = get_bytes_purchased(owner)
             if bytes_purchased >= listing_bytes:
-                tmp_file = f'{current_app.config["TMP_FILE_STORAGE"]}/{listing}'
+                tmp_file = f'{current_app.config["TMP_FILE_STORAGE"]}{listing}'
                 
                 # We have the file from S3, mark it as accessed and delivered
                 listing_accessed(delivery_hash, listing, listing_bytes)
@@ -41,6 +42,13 @@ class Delivery(Resource):
 
                 #TODO: stream this from s3 rather than downloading then streaming
                 current_app.logger.info('Requested delivery sent to user')
+                @after_this_request
+                def remove_file(response):
+                        try:
+                            os.remove(tmp_file)
+                        except Exception as error:
+                            current_app.logger.error(f'Error removing file: {error}')
+                        return response
                 return send_file(tmp_file, mimetype=mimetype, attachment_filename=id)
             else:
                 current_app.logger.error(C.INSUFFICIENT_PURCHASED)
