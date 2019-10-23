@@ -10,7 +10,7 @@ from apis.listing.tasks import send_data_hash_after_mining
 
 # OWNER, MAKER, VOTER, DATATRUST = accounts [0,1,2,0]
 
-def test_register_and_confirm(w3, ether_token, market_token, voting, parameterizer_opts, parameterizer, reserve, datatrust, ctx):
+def test_has_ethertoken(w3, ether_token):
     user = w3.eth.defaultAccount 
     user_bal = call(ether_token.balance_of(user))
     assert user_bal == 0
@@ -23,7 +23,10 @@ def test_register_and_confirm(w3, ether_token, market_token, voting, parameteriz
     assert new_user_bal == w3.toWei(10, 'ether')
     assert rct['status'] == 1
 
+def test_has_cmt(w3, ether_token, market_token, reserve):
+    user = w3.eth.defaultAccount 
     # Approve the spend
+    user_bal = call(ether_token.balance_of(user))
     old_allowance = call(ether_token.allowance(user, reserve.address))
     assert old_allowance == 0
     tx= transact(ether_token.approve(reserve.address, w3.toWei(10, 'ether'), opts={'from': user}))
@@ -34,9 +37,9 @@ def test_register_and_confirm(w3, ether_token, market_token, voting, parameteriz
 
     # Perform pre-checks for support 
     support_price = call(reserve.get_support_price())
-    assert new_user_bal >= support_price
-    assert new_allowance >= new_user_bal
-    minted = (new_user_bal // support_price) * 10**9
+    assert user_bal >= support_price
+    assert new_allowance >= user_bal
+    minted = (user_bal // support_price) * 10**9
     assert minted == 10**7 * w3.toWei(1, 'gwei')
     priv = call(market_token.has_privilege(reserve.address))
     assert priv == True
@@ -44,7 +47,7 @@ def test_register_and_confirm(w3, ether_token, market_token, voting, parameteriz
     assert total_supply == w3.toWei(4, 'ether')
 
     # Call support
-    tx = transact(reserve.support(new_user_bal, opts={'gas': 1000000, 'from': user}))
+    tx = transact(reserve.support(user_bal, opts={'gas': 1000000, 'from': user}))
     rct = w3.eth.waitForTransactionReceipt(tx)
     assert rct['status'] == 1
     logs = reserve.deployed.events.Supported().processReceipt(rct)
@@ -54,6 +57,10 @@ def test_register_and_confirm(w3, ether_token, market_token, voting, parameteriz
     new_supply = call(market_token.total_supply())
     assert new_supply == total_supply + w3.toWei(10, 'milliether')
 
+def test_can_stake(w3, market_token, voting, parameterizer):
+    user = w3.eth.defaultAccount 
+
+    cmt_user_bal = call(market_token.balance_of(user))
     stake = call(parameterizer.get_stake())
     assert stake <= cmt_user_bal
 
@@ -66,6 +73,10 @@ def test_register_and_confirm(w3, ether_token, market_token, voting, parameteriz
     new_mkt_allowance = call(market_token.allowance(user, voting.address))
     assert new_mkt_allowance == w3.toWei(10, 'milliether')
     assert stake <= new_mkt_allowance
+
+
+def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, datatrust, ctx):
+    user = w3.eth.defaultAccount 
 
     tx = transact(datatrust.register(current_app.config['DNS_NAME'], {'from': user, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     rct = w3.eth.waitForTransactionReceipt(tx)
