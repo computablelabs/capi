@@ -1,7 +1,7 @@
 import pytest
 from computable.helpers.transaction import call
 from apis.helpers import extract_listing_hashes, extract_listing_hashes_to_block, listing_hash_join
-from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_approval
+from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance
 
 @pytest.fixture(scope='module')
 def logs(w3):
@@ -40,18 +40,18 @@ def test_maybe_transfer_market_token(w3, market_token):
     bal = call(market_token.balance_of(user))
     assert bal == one_eth
 
-def test_maybe_increase_market_token_approval(w3, market_token, voting):
+def test_maybe_increase_market_token_allowance(w3, market_token, voting):
     user = w3.eth.accounts[1]
     # user has not approved the voting contract to spend CMT
     allowed = call(market_token.allowance(user, voting.address))
     assert allowed == 0
     # should allow...
     one_gwei = w3.toWei(1, 'gwei')
-    tx_rct = maybe_increase_market_token_approval(w3, market_token, user, voting.address, one_gwei)
+    tx_rct = maybe_increase_market_token_allowance(w3, market_token, user, voting.address, one_gwei)
     allowed = call(market_token.allowance(user, voting.address))
     assert allowed == one_gwei
 
-def test_extract_listing_hashes(logs):
+def test_extract_listing_hashes(logs, ctx):
     extracted = extract_listing_hashes(logs)
     assert len(extracted) == 3
 

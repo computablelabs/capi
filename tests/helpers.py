@@ -1,7 +1,6 @@
 from computable.helpers.transaction import call, transact
 
-# TODO must change when audit are propagated (*allowance not *approval)
-def maybe_increase_market_token_approval(w3, market_token, owner, spender, thresh):
+def maybe_increase_market_token_allowance(w3, market_token, owner, spender, thresh):
     """
     Inspect the allowance for a given address from msg.sender. If below a
     given threshold, increase the allowance to meet it.
@@ -10,7 +9,7 @@ def maybe_increase_market_token_approval(w3, market_token, owner, spender, thres
     allowed = call(market_token.allowance(owner, spender))
     if allowed < thresh:
         delta = thresh - allowed
-        tx = transact(market_token.increase_approval(spender, delta,
+        tx = transact(market_token.increase_allowance(spender, delta,
             {'from': owner, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
         rct = w3.eth.waitForTransactionReceipt(tx)
     return rct
