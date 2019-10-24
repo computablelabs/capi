@@ -30,6 +30,7 @@ NOT_REGISTERED = 'This API is not currently the registered datatrust'
 REGISTERED = 'This API is currently the registered datatrust'
 REGISTERED_CANDIDATE = 'This API is an active candidate for datatrust'
 RESOLVED = 'Candidate %s has been marked for resolution'
+NEED_CMT_TO_STAKE = 'Insufficient CMT available to pay the stake for this operation.'
 
 # Celery related
 CELERY_TASK_TIMEOUT = 5.0 # seconds

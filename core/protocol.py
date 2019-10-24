@@ -7,7 +7,7 @@ TODO: implement celery for blockchain methods?
 from flask import current_app, g
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
-from computable.contracts import Voting, Datatrust, Listing
+from computable.contracts import MarketToken, Voting, Parameterizer, Datatrust, Listing
 from computable.helpers.transaction import call
 from .helpers import set_gas_prices, send_or_transact
 
@@ -29,10 +29,20 @@ def set_w3(w3=None):
             if current_app.config['DEVELOPMENT'] == True:
                 g.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
+def get_market_token():
+    mt = MarketToken(g.w3.eth.defaultAccount)
+    mt.at(g.w3, current_app.config['MARKET_TOKEN_CONTRACT_ADDRESS'])
+    return mt
+
 def get_voting():
     v = Voting(g.w3.eth.defaultAccount)
     v.at(g.w3, current_app.config['VOTING_CONTRACT_ADDRESS'])
     return v
+
+def get_parameterizer():
+    p = Parameterizer(g.w3.eth.defaultAccount)
+    p.at(g.w3, current_app.config['PARAMETERIZER_CONTRACT_ADDRESS'])
+    return p
 
 def get_datatrust():
     d = Datatrust(g.w3.eth.defaultAccount)
