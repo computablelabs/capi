@@ -1,6 +1,5 @@
 from flask import current_app, g
 from flask_restplus import reqparse
-from apis.serializers import file_size_in_s3
 
 delivery_parser = reqparse.RequestParser(bundle_errors=True)
 delivery_parser.add_argument('delivery_hash', type=str, required=True, location='args', help='The delivery hash for the request to fulfill')
@@ -40,3 +39,16 @@ def get_mimetype(key):
         return response['Item'].get('file_type', 'unknown')
     else:
         return 'unknown'
+
+def file_size_in_s3(key):	
+    """	
+    Return the size of an object stored in s3	
+    """	
+    s3_object = g.s3.head_object(	
+        Bucket=current_app.config['S3_DESTINATION'],	
+        Key=key	
+    )	
+    if 'ContentLength' in s3_object:	
+        return s3_object['ContentLength']	
+    else:	
+        return None

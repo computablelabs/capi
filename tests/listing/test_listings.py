@@ -183,18 +183,11 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     # must exist in the dynamo table
     row = {
             'listing_hash': w3.toHex(listing_hash),
-            'title': 'lol catz 9000'
+            'title': 'lol catz 9000',
+            'size': 45
         }
 
     g.table.put_item(Item=row)
-
-    # store in S3
-    file_contents = 'so many catz #lolz #hashtag #9000 #allthecatz'
-    s3_object = g.s3.put_object(
-        Body=file_contents,
-        Bucket=current_app.config['S3_DESTINATION'],
-        Key=w3.toHex(listing_hash)
-    )
 
     listings = test_client.get('/listings/')
     payload = json.loads(listings.data)
@@ -202,7 +195,7 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert payload['from_block'] == 0
     assert payload['items'][0]['listing_hash'] == w3.toHex(listing_hash) # payload hashes are hex
     assert payload['items'][0]['title'] == 'lol catz 9000'
-    assert payload['items'][0]['size'] == len(file_contents.encode('utf-8'))
+    assert payload['items'][0]['size'] == 45
     assert payload['to_block'] > 0
 
 @patch('apis.listing.listings.ListingsRoute.send_data_hash')
@@ -260,6 +253,7 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
     assert new_listing['Item']['file_type'] == test_payload['file_type']
     assert new_listing['Item']['md5_sum'] == test_payload['md5_sum']
     assert new_listing['Item']['owner'] == test_payload['owner']
+    assert new_listing['Item']['size'] == len('a pony'.encode('utf-8'))
 
 def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client):
     """

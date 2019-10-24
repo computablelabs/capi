@@ -1,7 +1,6 @@
 """
 Some serializer models will be useful to multiple namespaces
 """
-from flask import current_app, g
 from flask_restplus import Model, fields
 
 Listing = Model('Listing', {
@@ -20,16 +19,3 @@ Listings = Model('Listings', {
     'from_block': fields.Integer(required=True, description='Block number where scanning began'),
     'to_block': fields.Integer(required=True, description='Highest block number scanned')
     })
-
-def file_size_in_s3(key):
-    """
-    Return the size of an object stored in s3
-    """
-    s3_object = g.s3.head_object(
-        Bucket=current_app.config['S3_DESTINATION'],
-        Key=key
-    )
-    if 'ContentLength' in s3_object:
-        return s3_object['ContentLength']
-    else:
-        return None
