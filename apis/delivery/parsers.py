@@ -16,8 +16,7 @@ def parse_query(query):
         query,
         download_location
     )
-    mimetype = get_mimetype(query)
-    file_size = file_size_in_s3(query)
+    mimetype, file_size = get_mimetype(query)
 
     return dict(
         listing_hash=query,
@@ -33,22 +32,11 @@ def get_mimetype(key):
         Key={
             'listing_hash': key
         },
-        ProjectionExpression='file_type'
+        ProjectionExpression='file_type, size'
     )
     if 'Item' in response:
-        return response['Item'].get('file_type', 'unknown')
+        file_type = response['Item'].get('file_type', 'unknown')
+        size = response['Item'].get('size', 0)
+        return file_type, size
     else:
-        return 'unknown'
-
-def file_size_in_s3(key):	
-    """	
-    Return the size of an object stored in s3	
-    """	
-    s3_object = g.s3.head_object(	
-        Bucket=current_app.config['S3_DESTINATION'],	
-        Key=key	
-    )	
-    if 'ContentLength' in s3_object:	
-        return s3_object['ContentLength']	
-    else:	
-        return None
+        return 'unknown', 0
