@@ -49,7 +49,6 @@ def test_has_cmt(w3, ether_token, market_token, reserve):
     tx = transact(reserve.support(user_bal, opts={'gas': 1000000, 'from': user}))
     rct = w3.eth.waitForTransactionReceipt(tx)
     assert rct['status'] == 1
-    logs = reserve.deployed.events.Supported().processReceipt(rct)
     cmt_user_bal = call(market_token.balance_of(user))
     # There is the creator already
     assert cmt_user_bal >= w3.toWei(10, 'milliether')
