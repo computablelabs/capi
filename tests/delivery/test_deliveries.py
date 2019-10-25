@@ -10,7 +10,7 @@ def test_jwt_required(test_client):
     assert delivery.status_code == 401
 
 def test_has_ethertoken(w3, ether_token):
-    user = w3.eth.defaultAccount 
+    user = w3.eth.defaultAccount
     user_bal = call(ether_token.balance_of(user))
     assert user_bal == 0
 
@@ -23,7 +23,7 @@ def test_has_ethertoken(w3, ether_token):
     assert rct['status'] == 1
 
 def test_has_cmt(w3, ether_token, market_token, reserve):
-    user = w3.eth.defaultAccount 
+    user = w3.eth.defaultAccount
     # Approve the spend
     user_bal = call(ether_token.balance_of(user))
     old_allowance = call(ether_token.allowance(user, reserve.address))
@@ -34,7 +34,7 @@ def test_has_cmt(w3, ether_token, market_token, reserve):
     new_allowance = call(ether_token.allowance(user, reserve.address))
     assert new_allowance == w3.toWei(10, 'ether')
 
-    # Perform pre-checks for support 
+    # Perform pre-checks for support
     support_price = call(reserve.get_support_price())
     assert user_bal >= support_price
     assert new_allowance >= user_bal
@@ -56,7 +56,7 @@ def test_has_cmt(w3, ether_token, market_token, reserve):
     assert new_supply == total_supply + w3.toWei(10, 'milliether')
 
 def test_can_stake(w3, market_token, voting, parameterizer):
-    user = w3.eth.defaultAccount 
+    user = w3.eth.defaultAccount
 
     cmt_user_bal = call(market_token.balance_of(user))
     stake = call(parameterizer.get_stake())
@@ -73,7 +73,7 @@ def test_can_stake(w3, market_token, voting, parameterizer):
     assert stake <= new_mkt_allowance
 
 def test_register_datatrust(w3, market_token, voting, parameterizer_opts, datatrust):
-    user = w3.eth.defaultAccount 
+    user = w3.eth.defaultAccount
     # register the datatrust
     tx = transact(datatrust.register(current_app.config['DNS_NAME'], {'from': user, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     rct = w3.eth.waitForTransactionReceipt(tx)
@@ -127,7 +127,7 @@ def test_create_listing(w3, market_token, voting, parameterizer_opts, datatrust,
     dtx = transact(datatrust.set_data_hash(listing_hash, data_hash,
         {'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}))
     drct = w3.eth.waitForTransactionReceipt(dtx)
-    
+
     # Vote in the listing
     voter = w3.eth.accounts[2]
     stake = parameterizer_opts['stake']
@@ -198,7 +198,7 @@ def test_no_approved_funds_returns_http412(w3, datatrust, dynamo_table, s3_clien
     amount = 1 # insufficient bytes for the listing
     delivery_tx = transact(
         datatrust.request_delivery(
-            delivery_hash, amount, 
+            delivery_hash, amount,
             {'from': buyer, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}
         )
     )
@@ -253,13 +253,13 @@ def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk,
         Bucket=current_app.config['S3_DESTINATION'],
         Key=w3.toHex(listing_hash)
     )
-    
+
     # Request a delivery
     delivery_hash = w3.keccak(text='monty_pythons_delivery_hash')
     amount = 14 # derived from storing the actual file in S3 and checking size
     delivery_tx = transact(
         datatrust.request_delivery(
-            delivery_hash, amount, 
+            delivery_hash, amount,
             {'from': buyer, 'gas': 1000000, 'gasPrice': w3.toWei(2, 'gwei')}
         )
     )
