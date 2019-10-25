@@ -4,7 +4,7 @@ Blueprint containing the 'admin' CLI for datatrust operators
 import click
 from flask import Blueprint
 from flask import current_app, g
-from .protocol import set_w3, get_datatrust, is_registered
+from .protocol import set_w3, get_market_token, get_voting, get_parameterizer, get_datatrust, is_registered
 from .helpers import set_gas_prices, send_or_transact
 import core.constants as C # TODO why can't i use .constants?
 from computable.helpers.transaction import call
@@ -37,17 +37,42 @@ def do_registration(gas_price):
     if is_registered() == True:
         click.echo(C.REGISTERED)
     else:
-        dt = get_datatrust()
-        # comp.py HOC methods produce a tuple -> (tx, opts)
-        t = dt.register(current_app.config['DNS_NAME'])
-        # we use an abstracted helper to estimate gas, and set the given gas price
-        args = set_gas_prices(t, gas_price) # omit gas arg and it will be estimated
-        tx = send_or_transact(args)
-        rct = g.w3.eth.waitForTransactionReceipt(tx)
-        # TODO if the receipt is wanted we could output it...
-        # click.echo(rct)
+        # the operator will need to approve the voting contract to spend the stake
+        click.echo('Checking for the ability to stake...')
+        p11r = get_parameterizer()
+        stake = call(p11r.get_stake())
 
-        click.echo(C.REGISTERED_CANDIDATE)
+        mt = get_market_token()
+
+        # the datatrust operator must have CMT in order to stake
+        mt_bal = call(mt.balance_of(mt.account))
+
+        if mt_bal < stake:
+            click.echo(C.NEED_CMT_TO_STAKE)
+        else:
+            # the 'account' of any HOC is the public key set in our env
+            allowed = call(mt.allowance(mt.account, current_app.config['VOTING_CONTRACT_ADDRESS']))
+
+            if allowed < stake:
+                click.echo('Approving the Voting contract to withdraw the stake for this registration')
+                # rather than fuss with getting deltas, just set the approval to the stake
+                app = mt.approve(current_app.config['VOTING_CONTRACT_ADDRESS'], stake)
+                app_args = set_gas_prices(app, gas_price)
+                app_tx = send_or_transact(app_args)
+                rct = g.w3.eth.waitForTransactionReceipt(app_tx)
+
+            click.echo('Registering...')
+            dt = get_datatrust()
+            # comp.py HOC methods produce a tuple -> (tx, opts)
+            t = dt.register(current_app.config['DNS_NAME'])
+            # we use an abstracted helper to estimate gas, and set the given gas price
+            args = set_gas_prices(t, gas_price) # omit gas arg and it will be estimated
+            tx = send_or_transact(args)
+            rct = g.w3.eth.waitForTransactionReceipt(tx)
+            # TODO if the receipt is wanted we could output it...
+            # click.echo(rct)
+
+            click.echo(C.REGISTERED_CANDIDATE)
 
 @admin.cli.command('resolution_test', with_appcontext=False)
 @click.option('--hash', type=str, help='The Keccak hash which identifies the candidate to be resolved')

@@ -33,7 +33,7 @@ class Delivery(Resource):
             bytes_purchased = get_bytes_purchased(owner)
             if bytes_purchased >= listing_bytes:
                 tmp_file = f'{current_app.config["TMP_FILE_STORAGE"]}{listing}'
-                
+
                 # We have the file from S3, mark it as accessed and delivered
                 listing_accessed(delivery_hash, listing, listing_bytes)
                 current_app.logger.info(f'{owner} used {listing_bytes} bytes accessing {listing}')

@@ -16,7 +16,7 @@ def parse_query(query):
         query,
         download_location
     )
-    mimetype, file_size = get_mimetype(query)
+    mimetype, file_size = get_mimetype_and_size(query)
 
     return dict(
         listing_hash=query,
@@ -24,7 +24,7 @@ def parse_query(query):
         file_size=file_size
     )
 
-def get_mimetype(key):
+def get_mimetype_and_size(key):
     """
     Return the mimetype for the listing
     """

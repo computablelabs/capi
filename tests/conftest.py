@@ -209,12 +209,14 @@ def flask_app():
     return an_app
 
 @pytest.fixture(scope='function')
-def ctx(w3, ether_token, voting, datatrust, listing, flask_app):
+def ctx(w3, ether_token, market_token, voting, parameterizer, datatrust, listing, flask_app):
     ctx = flask_app.app_context()
     ctx.push() # current_app and g now are present
 
     current_app.config['ETHER_TOKEN_CONTRACT_ADDRESS'] = ether_token.address
+    current_app.config['MARKET_TOKEN_CONTRACT_ADDRESS'] = market_token.address
     current_app.config['VOTING_CONTRACT_ADDRESS'] = voting.address
+    current_app.config['PARAMETERIZER_CONTRACT_ADDRESS'] = parameterizer.address
     current_app.config['DATATRUST_CONTRACT_ADDRESS'] = datatrust.address
     current_app.config['LISTING_CONTRACT_ADDRESS'] = listing.address
     current_app.config['PUBLIC_KEY'] = w3.eth.defaultAccount
