@@ -27,7 +27,7 @@ class Delivery(Resource):
         if delivery_owner == owner:
             query_details = parse_query(args['query'])
             listing = query_details['listing_hash']
-            listing_bytes = query_details['file_size']
+            listing_bytes = int(query_details['file_size'])
             mimetype = query_details['mimetype']
 
             bytes_purchased = get_bytes_purchased(owner)

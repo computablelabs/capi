@@ -7,7 +7,7 @@ from celery import uuid
 from core import constants as C
 from core.protocol import is_registered
 from core.dynamo import get_listings
-from apis.serializers import Listing, Listings, file_size_in_s3
+from apis.serializers import Listing, Listings
 from apis.parsers import from_block_owner, parse_from_block_owner
 from apis.helpers import extract_listing_hashes, listing_hash_join
 from .serializers import NewListing
@@ -44,8 +44,6 @@ class ListingsRoute(Resource):
         current_app.logger.debug('retrieved listings from db')
         # filter out any removed by passing them
         it, tb = listing_hash_join(listed, all_the_dynamo, removed_hashes)
-        for item in it:
-            item['size'] = file_size_in_s3(item['listing_hash'])
 
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
 
@@ -69,8 +67,6 @@ class ListingsRoute(Resource):
             api.abort(500, C.NOT_REGISTERED) # TODO different error code?
         else:
             payload = self.get_payload()
-            db_write = self.save_to_db(payload)
-            current_app.logger.info(f'Listing hash {payload["listing_hash"]} saved to db')
             file_item = request.files.items()
             for idx, item in enumerate(file_item):
                 # TODO contents = self.upload_to_s3...
@@ -86,6 +82,11 @@ class ListingsRoute(Resource):
                 current_app.logger.info(f'Listing hash {payload["listing_hash"]} uploaded to S3')
                 name = self.get_filename()
                 payload['filename'] = name if name else item[0]
+
+            file_info = os.stat(loc)
+            payload['size'] = file_info.st_size
+            db_write = self.save_to_db(payload)
+            current_app.logger.info(f'Listing hash {payload["listing_hash"]} saved to db')
 
             keccak = self.get_keccak(loc)
 

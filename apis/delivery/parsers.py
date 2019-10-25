@@ -1,6 +1,5 @@
 from flask import current_app, g
 from flask_restplus import reqparse
-from apis.serializers import file_size_in_s3
 
 delivery_parser = reqparse.RequestParser(bundle_errors=True)
 delivery_parser.add_argument('delivery_hash', type=str, required=True, location='args', help='The delivery hash for the request to fulfill')
@@ -17,8 +16,7 @@ def parse_query(query):
         query,
         download_location
     )
-    mimetype = get_mimetype(query)
-    file_size = file_size_in_s3(query)
+    mimetype, file_size = get_mimetype(query)
 
     return dict(
         listing_hash=query,
@@ -34,9 +32,11 @@ def get_mimetype(key):
         Key={
             'listing_hash': key
         },
-        ProjectionExpression='file_type'
+        ProjectionExpression='file_type, size'
     )
     if 'Item' in response:
-        return response['Item'].get('file_type', 'unknown')
+        file_type = response['Item'].get('file_type', 'unknown')
+        size = response['Item'].get('size', 0)
+        return file_type, size
     else:
-        return 'unknown'
+        return 'unknown', 0

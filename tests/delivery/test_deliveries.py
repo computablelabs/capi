@@ -178,6 +178,15 @@ def test_no_approved_funds_returns_http412(w3, datatrust, dynamo_table, s3_clien
     listing_hash = w3.keccak(text='cheap warez')
     file_contents = 'all the cheap warez, pay for shipping and handling only'
 
+    # Store the listing in dynamo
+    row = {
+            'listing_hash': w3.toHex(listing_hash),
+            'title': 'cheap warez',
+            'size': len(file_contents.encode('utf-8'))
+        }
+
+    g.table.put_item(Item=row)
+
     # Put the listing in S3
     s3_object = g.s3.put_object(
         Body=file_contents,
@@ -233,7 +242,8 @@ def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk,
     row = {
             'listing_hash': w3.toHex(listing_hash),
             'title': 'so many catz',
-            'file_type': mimetype
+            'file_type': mimetype,
+            'size': len(file_contents.encode('utf-8'))
         }
 
     g.table.put_item(Item=row)
