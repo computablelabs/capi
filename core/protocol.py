@@ -87,13 +87,15 @@ def listing_accessed(delivery_hash, listing, amount):
     """
     d = get_datatrust()
     tx = send_or_transact(d.listing_accessed(listing, delivery_hash, amount))
- 
+    return tx
+
 def delivered(delivery_hash, url):
     """
     Mark the delivery as complete in protocol
     """
     d = get_datatrust()
     tx = send_or_transact(d.delivered(delivery_hash, url))
+    return tx
 
 def get_bytes_purchased(address):
     """
