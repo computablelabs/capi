@@ -38,17 +38,23 @@ class Delivery(Resource):
                 listing_accessed(delivery_hash, listing, listing_bytes)
                 current_app.logger.info(f'{owner} used {listing_bytes} bytes accessing {listing}')
                 delivery_url = g.w3.keccak(text=f"{current_app.config['DNS_NAME']}/deliveries/?delivery_hash={delivery_hash}")
-                delivered(delivery_hash, delivery_url)
+
+                # delivered(delivery_hash, delivery_url) -- NOTE attempting from after_this_request in case blockchain would fuck it up...
 
                 #TODO: stream this from s3 rather than downloading then streaming
                 current_app.logger.info('Requested delivery sent to user')
+
                 @after_this_request
                 def remove_file(response):
-                        try:
-                            os.remove(tmp_file)
-                        except Exception as error:
-                            current_app.logger.error(f'Error removing file: {error}')
-                        return response
+                    try:
+                        # first see if we can remove the tmp file
+                        os.remove(tmp_file)
+                        # now see if we can get paid
+                        delivered(delivery_hash, delivery_url)
+                    except Exception as error:
+                        current_app.logger.error(f'Error removing file or calling datatrust.delivered: {error}')
+                    return response
+
                 return send_file(tmp_file, mimetype=mimetype, attachment_filename=id)
             else:
                 current_app.logger.error(C.INSUFFICIENT_PURCHASED)
