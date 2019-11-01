@@ -307,6 +307,9 @@ def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk,
     assert delivery.headers['Content-Type'] == mimetype
     assert int(delivery.headers['Content-Length']) == amount
     assert delivery.data == file_contents.encode()
+    content_disposition = delivery.headers['Content-Disposition'].split(';')
+    assert content_disposition[0] == 'attachment'
+    assert content_disposition[1].strip() == f'filename={w3.toHex(listing_hash)}'
 
     # Ensure downloaded file is removed from Docker container
     with pytest.raises(FileNotFoundError) as exc:
