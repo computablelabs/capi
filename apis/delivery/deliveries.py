@@ -56,7 +56,7 @@ class Delivery(Resource):
                         current_app.logger.error(f'Error removing file or calling datatrust.delivered: {error}')
                     return response
 
-                return send_file(tmp_file, mimetype=mimetype, attachment_filename=id)
+                return send_file(tmp_file, mimetype=mimetype, attachment_filename=listing, as_attachment=True)
             else:
                 current_app.logger.error(C.INSUFFICIENT_PURCHASED)
                 api.abort(412, C.INSUFFICIENT_PURCHASED)
