@@ -1,5 +1,7 @@
 from core.protocol import get_listing
+from core.helpers import metrics_collector
 
+@metrics_collector
 def filter_listed(from_block, arg_filters=None):
     """
     given filter args and the current request g context create a listing contract
@@ -13,6 +15,7 @@ def filter_listed(from_block, arg_filters=None):
 
     return filter.get_all_entries()
 
+@metrics_collector
 def filter_listing_removed(from_block):
     """
     given filter args and the current request g context create a listing contract

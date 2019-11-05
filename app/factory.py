@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from werkzeug.middleware.proxy_fix import ProxyFix # cuz https is hard i guess
 from apis import api
@@ -8,6 +8,8 @@ from core.protocol import set_w3
 from core.dynamo import set_dynamo_table
 from core.s3 import set_s3_client
 from core.celery import initialize
+from core.cloudwatch import set_metric
+from core.cloudwatch import set_cloudwatch
 from logging.config import fileConfig
 from flask_jwt_extended import JWTManager
 
@@ -49,5 +51,15 @@ def create_app(app_name=a_name, **kwargs):
         set_w3()
         set_dynamo_table()
         set_s3_client()
+        set_cloudwatch()
+    
+    @app.after_request
+    def finalize(response):
+        """
+        Capture any metrics recorded and store them
+        """
+        request_namespace = f'{request.url_rule}_{request.method}'
+        set_metric(request_namespace)
+        return response
 
     return app
