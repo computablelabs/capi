@@ -1,4 +1,6 @@
 from math import ceil
+import functools
+from time import perf_counter
 from flask import current_app, g
 import requests
 from computable.helpers.transaction import send, transact
@@ -62,3 +64,23 @@ def send_or_transact(args):
         tx = send(g.w3, current_app.config['PRIVATE_KEY'], args)
 
     return tx
+
+def metrics_collector(func):
+    """
+    Decorator to time function and store timing results in the global env
+    """
+    @functools.wraps(func)
+    def wrapper_timer(*args, **kwargs):
+        start_time = perf_counter()
+        value = func(*args, **kwargs)
+        end_time = perf_counter()
+        run_time = (end_time - start_time) * 1000 # convert to milliseconds
+        run_time = int(run_time) # we'll lose some accuracy here, but I think it's negligible
+        if 'metrics' not in g:
+            g.metrics = []
+        g.metrics.append({
+            func.__name__: run_time
+        })
+        return value
+    return wrapper_timer
+            
