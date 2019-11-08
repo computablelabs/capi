@@ -102,7 +102,7 @@ def parameterizer_opts(w3):
                 'price_floor': w3.toWei(1, 'szabo'),
                 'spread': 110,
                 'list_reward': w3.toWei(250, 'szabo'),
-                'stake': w3.toWei(10, 'finney'),
+                'stake': w3.toWei(1, 'finney'),
                 'vote_by': 100,
                 'plurality': 50,
                 'backend_payment': 25,

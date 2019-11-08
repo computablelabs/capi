@@ -5,6 +5,7 @@ from unittest.mock import patch
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
 import core.constants as C
+from core.protocol import has_stake
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance, time_travel
 
 class MockTask:
@@ -123,10 +124,8 @@ def test_has_cmt(w3, ether_token, market_token, reserve):
 
 def test_can_stake(w3, market_token, voting, parameterizer):
     user = w3.eth.defaultAccount
-
-    cmt_user_bal = call(market_token.balance_of(user))
+    assert has_stake(user)
     stake = call(parameterizer.get_stake())
-    assert stake <= cmt_user_bal
 
     # Approve the market token allowance
     old_mkt_allowance = call(market_token.allowance(user, voting.address))

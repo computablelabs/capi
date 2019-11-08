@@ -103,3 +103,15 @@ def get_bytes_purchased(address):
     """
     d = get_datatrust()
     return call(d.get_bytes_purchased(address))
+
+def has_stake(address):
+    """
+    Given an account address, check to see if there is sufficient CMT balance to pay current market stake
+    """
+    p = get_parameterizer()
+    stake = call(p.get_stake())
+
+    t = get_market_token()
+    bal = call(t.balance_of(address))
+
+    return bal >= stake

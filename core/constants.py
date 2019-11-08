@@ -19,6 +19,7 @@ LOGIN_SUCCESS = 'Signed message verified, access authorized'
 LOGIN_FAILED = 'Signed message failed validation or access unauthorized'
 CONTENT_DELIVERED = 'Requested content delivered'
 INSUFFICIENT_PURCHASED = 'Insufficient bytes purchased for request'
+PREVIEW_LISTING_TYPE_ONLY = 'Previews are only available for Listings or Applications'
 
 # DB related messages
 DB_SUCCESS = 'Database transaction completed successfully'
@@ -31,6 +32,7 @@ REGISTERED = 'This API is currently the registered datatrust'
 REGISTERED_CANDIDATE = 'This API is an active candidate for datatrust'
 RESOLVED = 'Candidate %s has been marked for resolution'
 NEED_CMT_TO_STAKE = 'Insufficient CMT available to pay the stake for this operation.'
+NEED_CMT_TO_PREVIEW = 'Preview requires that the requester have a CMT balance greater than or equal to the current market stake'
 
 # Celery related
 CELERY_TASK_TIMEOUT = 5.0 # seconds
