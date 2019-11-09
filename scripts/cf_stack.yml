@@ -1,0 +1,238 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+
+Description:
+  AWS Cloudformation template for launching the CAPI as an
+  ECS Fargate Service. An existing ECS Fargate Cluster is required
+
+Parameters:
+  ClusterName:
+    Type: String
+    Description: ECS Fargate cluster to run task on
+
+  DesiredCount:
+    Type: String
+    Description: The desired number of running tasks
+
+  Environment:
+    Type: String
+    Description: The runtime environment, i.e. dev, staging, prod
+    AllowedValues: ['dev', 'staging', 'prod']
+    Default: 'dev'
+
+  StackName:
+    Type: String
+    Description: Common name for the stack being built
+
+  LBSubnets:
+    Type: String
+    Description: Subnets to use for Load Balancer
+
+  LBSecGroups:
+    Type: String
+    Description: Security groups for Load Balancer
+
+  ServiceSubnets:
+    Type: String
+    Description: Subnets to use for ECS Service
+
+  ServiceSecGroups:
+    Type: String
+    Description: Security groups for ECS Service
+
+  SSLCertArn:
+    Type: String
+    Description: AWS ARN for SSL Cert used by Load Balancer
+
+  VpcId:
+    Type: String
+    Description: VPC ID for resources
+
+  CPU:
+    Type: Number
+    Default: 2048
+    Description: CPU units to allocate to task definition
+
+  Memory:
+    Type: Number
+    Default: 4096
+    Description: Memory (MB) to allocate to task definition
+
+  ImageUrl:
+    Type: String
+    Default: ""
+    Description: The URL of the docker image for this service
+
+  TaskRoleArn:
+    Type: String
+    Description: ARN used by running ECS task
+
+  ExecutionRoleArn:
+    Type: String
+    Description: ARN used for executing ECS task
+
+  REGION:
+    Type: String
+    Description: AWS Region
+
+  HostedZoneId:
+    Type: String
+    Description: AWS Hosted Zone for DNS
+
+  DNSName:
+    Type: String
+    Description: DNS name for the service
+
+Outputs:
+  LBSubnets:
+    Description: Load balancer subnets
+    Value: !Ref ServiceSecGroups
+
+Resources:
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Scheme: 'internet-facing'
+      IpAddressType: ipv4
+      Tags:
+        - Key: Name
+          Value: !Ref StackName
+        - Key: Service
+          Value: !Ref StackName
+        - Key: Env
+          Value: !Ref Environment
+        - Key: Role
+          Value: "Load Balancer"
+      Subnets: !Split [",", !Ref LBSubnets]
+      SecurityGroups: !Split [",", !Ref LBSecGroups]
+
+  ServiceDNSName:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DNSName
+      TTL: '300'
+      Type: 'CNAME'
+      ResourceRecords:
+        - !GetAtt LoadBalancer.DNSName
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 60
+      HealthCheckPath: /status/
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 2
+      TargetType: ip
+      Port: 5000
+      Protocol: HTTP
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Ref StackName
+        - Key: Service
+          Value: !Ref StackName
+        - Key: Env
+          Value: !Ref Environment
+        - Key: Role
+          Value: "Target Group"
+
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: 'forward'
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: 'HTTPS'
+      Certificates:
+        - CertificateArn: !Ref SSLCertArn
+
+  LoadBalancerRedirectListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: 'redirect'
+          RedirectConfig:
+            Port: '443'
+            Protocol: 'HTTPS'
+            StatusCode: 'HTTP_301'
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: 'HTTP'
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Ref StackName
+      Cpu: !Ref CPU
+      Memory: !Ref Memory
+      RequiresCompatibilities:
+        - FARGATE
+      ContainerDefinitions:
+        - Name: !Ref StackName
+          Cpu: !Ref CPU
+          Memory: !Ref Memory
+          Image: !Ref ImageUrl
+          Essential: true
+          Environment:
+            - Name: ENV
+              Value: !Ref Environment
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              "awslogs-group": !Ref StackName
+              "awslogs-region": "us-west-1"
+              "awslogs-stream-prefix": !Ref StackName
+          PortMappings:
+              - ContainerPort: 5000
+                HostPort: 5000
+                Protocol: 'TCP'
+      NetworkMode: awsvpc
+      TaskRoleArn: !Ref TaskRoleArn
+      ExecutionRoleArn: !Ref ExecutionRoleArn
+
+  LoadBalancerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+      Conditions:
+        - Field: path-pattern
+          Values:
+            - '*'
+      ListenerArn: !Ref LoadBalancerListener
+      Priority: 10
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: LoadBalancerRule
+    Properties:
+      ServiceName: !Ref StackName
+      Cluster: !Ref ClusterName
+      LaunchType: FARGATE
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 50
+      DesiredCount: !Ref DesiredCount
+      HealthCheckGracePeriodSeconds: 30
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups: !Split [",", !Ref ServiceSecGroups]
+          Subnets: !Split [",", !Ref ServiceSubnets]
+      TaskDefinition: !Ref TaskDefinition
+      LoadBalancers:
+        - ContainerName: !Ref StackName
+          ContainerPort: 5000
+          TargetGroupArn: !Ref TargetGroup
+
+  ContainerCloudwatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref StackName
+      RetentionInDays: 30

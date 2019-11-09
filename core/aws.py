@@ -2,8 +2,8 @@ import json
 import boto3
 from botocore.exceptions import ClientError
 
-def get_secrets(env, region):
-    secret_name = f'ffa/datatrust/{env}'
+def get_secrets(network, region):
+    secret_name = network
     session = boto3.session.Session()
     client = session.client(service_name='secretsmanager', region_name=region)
 
