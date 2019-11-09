@@ -15,4 +15,14 @@ deploy:
   provider: script
   script: bash scripts/deploy.sh
   on:
-    branch: v3
+    branch: skynet
+deploy:
+  provider: script
+  script: bash scripts/deploy.sh
+  on:
+    branch: rinkeby
+deploy:
+  provider: script
+  script: bash scripts/deploy.sh
+  on:
+    branch: mainnet
