@@ -8,6 +8,7 @@ from .parsers import delivery_parser, parse_query
 
 api = Namespace('Delivery', description='Delivery endpoint for requesting purchased payloads')
 
+# TODO i would argue that this route should be `/deliveries/hash?query='...'`
 @api.route('/', methods=['GET'])
 class Delivery(Resource):
     @api.expect(delivery_parser)
