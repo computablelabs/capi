@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 
 # Build and tag docker image
-docker build --build-arg network=$TRAVIS_BRANCH -t "capi:$TRAVIS_BRANCH" .
+docker build --build-arg network=capi-$TRAVIS_BRANCH -t "capi:$TRAVIS_BRANCH" .
 docker tag "capi:$TRAVIS_BRANCH" "$REPO_URI:$TRAVIS_BRANCH"
 docker tag "capi:$TRAVIS_BRANCH" "$REPO_URI:$TRAVIS_COMMIT"
 $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
