@@ -33,7 +33,7 @@ def get_gas_price_and_wait_time(price_key='average', wait_key='avgWait'):
         try:
             payload = fetch_gas_pricing()
         except Exception:
-            return Exception('Error parsing JSON from EthGasStation endpoint')
+            raise Exception('Error fetching JSON from EthGasStation API')
         # our json will include an avg price and an avg wait time. we'll 2x the wait just in case...
         price = payload.get(price_key)
         wait = payload.get(wait_key)
@@ -46,8 +46,7 @@ def get_gas_price_and_wait_time(price_key='average', wait_key='avgWait'):
             # return (price_in_gwei, doubled_wait_time_seconds) NOTE that we only use the wait as a max timeout
             return (ceil(price / 10), (wait * 2) * 60)
         else:
-            # raise an error that the caller can catch and return correct response to client
-            return Exception('Error fetching values from EthGasStation API')
+            raise Exception('Error fetching values from EthGasStation API')
     else:
         return(POA_GAS_PRICE, EVM_TIMEOUT)
 
