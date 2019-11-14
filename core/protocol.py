@@ -9,7 +9,7 @@ from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from computable.contracts import MarketToken, Voting, Parameterizer, Datatrust, Listing
 from computable.helpers.transaction import call
-from .helpers import set_gas_prices, send_or_transact
+from .helpers import send_or_transact
 
 def set_w3(w3=None):
     """

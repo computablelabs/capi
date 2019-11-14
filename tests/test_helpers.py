@@ -1,6 +1,7 @@
 import pytest
 from computable.helpers.transaction import call
 from apis.helpers import extract_listing_hashes, extract_listing_hashes_to_block, listing_hash_join
+from core.helpers import get_gas_price_and_wait_time
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance
 
 @pytest.fixture(scope='module')
@@ -84,3 +85,14 @@ def test_extract_listing_hashes_to_block_filter_by_three_matches(w3, logs):
     extracted, tb = extract_listing_hashes_to_block(logs, filter_by)
     assert len(extracted) == 0
     assert tb == 4
+
+def test_get_gas_price_and_wait_time(w3):
+    try:
+        t = get_gas_price_and_wait_time()
+    except Exception:
+        raise Exception
+
+    assert isinstance(t[0], int)
+    assert t[0] == 2
+    assert isinstance(t[1], int)
+    assert t[1] == 600
