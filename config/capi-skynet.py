@@ -17,7 +17,7 @@ DATATRUST_CONTRACT_ADDRESS = '0x02E63dA636864Be42361Ff0D3e0658FA5EaCE6Bc'
 LISTING_CONTRACT_ADDRESS = '0xbA81178477eeB5B724bb52e016D16b56F075DA2f'
 
 # AWS
-secrets = get_secrets('staging', 'us-west-1')
+secrets = get_secrets('capi-skynet', 'us-west-1')
 
 TABLE_NAME = secrets['TABLE_NAME']
 DB_URL = secrets['DB_URL']

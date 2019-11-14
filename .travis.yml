@@ -12,7 +12,15 @@ install:
 script:
   - make test
 deploy:
-  provider: script
-  script: bash scripts/deploy.sh
-  on:
-    branch: v3
+  - provider: script
+    script: bash scripts/deploy.sh
+    on:
+      branch: skynet
+  - provider: script
+    script: bash scripts/deploy.sh
+    on:
+      branch: rinkeby
+  - provider: script
+    script: bash scripts/deploy.sh
+    on:
+      branch: mainnet
