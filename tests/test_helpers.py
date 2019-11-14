@@ -87,12 +87,12 @@ def test_extract_listing_hashes_to_block_filter_by_three_matches(w3, logs):
     assert tb == 4
 
 def test_get_gas_price_and_wait_time(w3):
-
-    t = get_gas_price_and_wait_time()
-    if isinstance(t, Exception):
+    try:
+        t = get_gas_price_and_wait_time()
+    except Exception:
         raise Exception
-    else:
-        assert isinstance(t[0], int)
-        assert t[0] == 2
-        assert isinstance(t[1], int)
-        assert t[1] == 600
+
+    assert isinstance(t[0], int)
+    assert t[0] == 2
+    assert isinstance(t[1], int)
+    assert t[1] == 600
