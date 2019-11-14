@@ -50,4 +50,6 @@ WAITING_FOR_NAMED_RECEIPT = 'Waiting on %s transaction receipt for %s'
 NAMED_TRANSACTION_MINED = '%s transaction mined: %s'
 
 # EVM related (also celery task)
-EVM_TIMEOUT = 300 # seconds. how long to wait before bailing on things like `waitForTransactionReceipt`
+EVM_TIMEOUT = 600 # seconds. how long to wait before bailing on things like `waitForTransactionReceipt`
+POA_GAS_PRICE = 2 # Skynet is configured to take 2 Gwei, and rinkeby will as well
+MAINNET_GAS_DEFAULT = 10 # kind of high gas price that should work in case of fetching it

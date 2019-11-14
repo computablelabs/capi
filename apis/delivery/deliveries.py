@@ -3,6 +3,7 @@ from flask import request, g, current_app, send_file, after_this_request
 from flask_restplus import Namespace, Resource
 from flask_jwt_extended import jwt_required, decode_token, get_jwt_identity
 from core import constants as C
+from core.helpers import get_gas_price_and_wait_time
 from core.protocol import get_delivery, listing_accessed, delivered, get_bytes_purchased
 from .parsers import delivery_parser, parse_query
 
@@ -43,13 +44,20 @@ class Delivery(Resource):
                 #TODO: stream this from s3 rather than downloading then streaming
                 current_app.logger.info('Requested delivery sent to user')
 
+                # we need to know how long to tell the waitForTransactionReceipt to wait
+                try:
+                    price_and_time = get_gas_price_and_wait_time()
+                    wait_time = price_and_time[1]
+                except Exception:
+                    wait_time = C.EVM_TIMEOUT
+
                 @after_this_request
                 def remove_file(response):
                     try:
                         # first see if we can remove the tmp file
                         os.remove(tmp_file)
                         # before we can call delivered we must make sure the accessed tx has mined
-                        accessed_rct = g.w3.eth.waitForTransactionReceipt(accessed_tx)
+                        accessed_rct = g.w3.eth.waitForTransactionReceipt(accessed_tx, timeout=wait_time)
                         current_app.logger.info('listing_accessed transaction mined, calling for delivery completion')
                         # now see if we can get paid (not blocking here atm...)
                         delivered(delivery_hash, delivery_url)
