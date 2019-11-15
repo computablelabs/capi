@@ -1,0 +1,33 @@
+from core.aws import get_secrets
+
+DEVELOPMENT = True
+DEBUG = True
+PORT = 5000
+HOST = '0.0.0.0'
+
+PUBLIC_KEY = '0x9D330a81aA8c5311D33016Ab0A97787A0B28306e'
+
+# CONTRACTS FOR FFA MARKET on skynet
+ETHER_TOKEN_CONTRACT_ADDRESS = ''
+MARKET_TOKEN_CONTRACT_ADDRESS = ''
+VOTING_CONTRACT_ADDRESS = ''
+PARAMETERIZER_CONTRACT_ADDRESS = ''
+RESERVE_CONTRACT_ADDRESS = ''
+DATATRUST_CONTRACT_ADDRESS = ''
+LISTING_CONTRACT_ADDRESS = ''
+
+# AWS
+secrets = get_secrets('capi-mainnet', 'us-west-1')
+
+TABLE_NAME = secrets['TABLE_NAME']
+DB_URL = secrets['DB_URL']
+S3_DESTINATION = secrets['S3_DESTINATION']
+RPC_PATH = secrets['RPC_PATH']
+PRIVATE_KEY = secrets['DATATRUST_KEY']
+DNS_NAME = secrets['DNSName']
+CELERY_BROKER_URL = secrets['CELERY_BROKER_URL']
+CELERY_RESULT_BACKEND = secrets['CELERY_RESULT_BACKEND']
+if 'LOG_LEVEL' in secrets:
+    # Setting log leve in secrets allows changing log level without a code push
+    LOG_LEVEL = secrets['LOG_LEVEL']
+JWT_SECRET_KEY = secrets['JWT_SECRET_KEY']
