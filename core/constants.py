@@ -35,7 +35,7 @@ NEED_CMT_TO_STAKE = 'Insufficient CMT available to pay the stake for this operat
 NEED_CMT_TO_PREVIEW = 'Preview requires that the requester have a CMT balance greater than or equal to the current market stake'
 
 # Celery related
-CELERY_TASK_TIMEOUT = 5.0 # seconds
+CELERY_TASK_TIMEOUT = 5.0 # seconds, only applies to fetching task from redis
 CELERY_TASK_FETCHED = 'Asynchronous task %s fetched successfully'
 CELERY_TASK_CREATED= 'Asynchronous task %s created successfully'
 CELERY_TASK_NOT_FOUND = 'Asynchronous task %s not found'
@@ -53,3 +53,5 @@ NAMED_TRANSACTION_MINED = '%s transaction mined: %s'
 EVM_TIMEOUT = 600 # seconds. how long to wait before bailing on things like `waitForTransactionReceipt`
 POA_GAS_PRICE = 2 # Skynet is configured to take 2 Gwei, and rinkeby will as well
 MAINNET_GAS_DEFAULT = 10 # kind of high gas price that should work in case of fetching it
+TRANSACTION_TIMEOUT = 'Transaction mining time has exceeded the timeout of %s'
+TRANSACTION_TIMEOUT_TRY_GET = '"waitForTransaction" has exceeded the timeout of %s, falling back to "getTransactionReceipt"'
