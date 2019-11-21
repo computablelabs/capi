@@ -21,7 +21,8 @@ class NewTaskRoute(Resource):
     @api.marshal_with(NewTaskResult)
     @api.response(201, C.CELERY_TASK_CREATED)
     @api.response(400, C.MISSING_PAYLOAD_DATA)
-    @api.response(500, C.SERVER_ERROR)
+    @api.response(500, C.NOT_REGISTERED)
+    @api.response(504, C.TRANSACTION_TIMEOUT)
     def post(self):
         """
         Given a transaction hash, start an async task to monitor when it has mined.
@@ -45,7 +46,10 @@ class NewTaskRoute(Resource):
 
     def start_task(self, tx_hash):
         uid = uuid()
-        wait_for_mining.s(tx_hash).apply_async(task_id=uid)
+        try:
+            wait_for_mining.s(tx_hash).apply_async(task_id=uid)
+        except Exception as e:
+            api.abort(504, str(e))
 
         return uid
 
