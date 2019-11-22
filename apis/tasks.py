@@ -1,8 +1,9 @@
 """
 Asyncronous tasks that may be used by more than one namespace
 """
+from time import sleep
 from flask import current_app, g
-from web3.exceptions import TimeExhausted
+from web3.exceptions import TransactionNotFound
 from app import celery
 from core.protocol import set_w3
 import core.constants as C
@@ -23,12 +24,25 @@ def wait_for_mining(tx_hash):
     except Exception:
         price_and_time = [C.MAINNET_GAS_DEFAULT, C.EVM_TIMEOUT] # a fairly high gas price and timeout that should not fail in the near future
 
-    # as an attempt to mitigate false positive tx failures, check for a successful TX after a timeout
-    try:
-        tx_rcpt = g.w3.eth.waitForTransactionReceipt(tx_hash, price_and_time[1])
-    except TimeExhausted:
-        current_app.logger.info(C.TRANSACTION_TIMEOUT_TRY_GET % price_and_time[1])
-        tx_rcpt = g.w3.eth.getTransactionReceipt(tx_hash)
+    slept = 0
+    tx_rcpt = None
+
+    # NOTE that price_and_time[1] is 2x what the ethGasStation estimate is
+    while slept < price_and_time[1]:
+        # because web3 throws if not present vs returning None (like the docs say)
+        try:
+            tx_rcpt = g.w3.eth.getTransactionReceipt(tx_hash)
+        except TransactionNotFound:
+            tx_rcpt = None
+            current_app.logger.info(f'Transaction Receipt not ready after {slept} seconds, sleeping...')
+        except:
+            tx_rcpt = None
+            current_app.logger.info(f'Unexpected error looking up transaction after {slept} seconds, sleeping...')
+
+        if tx_rcpt != None:
+            break
+        slept = slept + C.TRANSACTION_RETRY
+        sleep(C.TRANSACTION_RETRY)
 
     if tx_rcpt == None:
         current_app.logger.info(C.TRANSACTION_TIMEOUT % price_and_time[1])
