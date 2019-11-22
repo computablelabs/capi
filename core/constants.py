@@ -54,4 +54,4 @@ EVM_TIMEOUT = 600 # seconds. how long to wait before bailing on things like `wai
 POA_GAS_PRICE = 2 # Skynet is configured to take 2 Gwei, and rinkeby will as well
 MAINNET_GAS_DEFAULT = 10 # kind of high gas price that should work in case of fetching it
 TRANSACTION_TIMEOUT = 'Transaction mining time has exceeded the timeout of %s'
-TRANSACTION_TIMEOUT_TRY_GET = '"waitForTransaction" has exceeded the timeout of %s, falling back to "getTransactionReceipt"'
+TRANSACTION_RETRY = 15 # seconds to sleep before checking for transaction receipt
