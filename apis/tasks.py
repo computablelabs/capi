@@ -28,7 +28,7 @@ def wait_for_mining(tx_hash):
         tx_rcpt = g.w3.eth.waitForTransactionReceipt(tx_hash, price_and_time[1])
     except TimeExhausted:
         current_app.logger.info(C.TRANSACTION_TIMEOUT_TRY_GET % price_and_time[1])
-        tx_rcpt = g.w3.getTransactionReceipt(tx_hash)
+        tx_rcpt = g.w3.eth.getTransactionReceipt(tx_hash)
 
     if tx_rcpt == None:
         current_app.logger.info(C.TRANSACTION_TIMEOUT % price_and_time[1])
