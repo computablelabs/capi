@@ -8,7 +8,7 @@ from core import constants as C
 from core.protocol import is_registered
 from core.dynamo import get_listings
 from apis.serializers import Listing, Listings
-from apis.parsers import from_block_owner, parse_from_block_owner
+from apis.parsers import from_to_owner, parse_from_to_owner
 from apis.helpers import extract_listing_hashes, listing_hash_join
 from .serializers import NewListing
 from .parsers import listing_parser
@@ -23,22 +23,22 @@ api.models['NewListing'] = NewListing
 
 @api.route('/')
 class ListingsRoute(Resource):
-    @api.expect(from_block_owner)
+    @api.expect(from_to_owner)
     @api.marshal_with(Listings)
     def get(self):
         """
         Fetch and return all listings, optionally filtered from a given block number.
         """
         # TODO implement paging
-        args = parse_from_block_owner(from_block_owner.parse_args())
+        args = parse_from_to_owner(from_to_owner.parse_args())
         # protocol stuff... TODO handle blockchain reverts
-        current_app.logger.info(f'Fetching listings from block {args["from_block"]}')
+        current_app.logger.info(f'Fetching listings from block {args["from_block"]} to block {args["to_block"]}')
         # use this list to filter by so that we only return live listings
-        removed = filter_listing_removed(args['from_block'])
+        removed = filter_listing_removed(args['from_block'], args['to_block'])
         # we need the hashes themselves to pass as a filter_by to ...join
         removed_hashes = extract_listing_hashes(removed) # not using the to_block on removed
 
-        listed = filter_listed(args['from_block'], args['filters'])
+        listed = filter_listed(args['from_block'], args['to_block'], args['filters'])
         # TODO any filtering for dynamo?
         all_the_dynamo = get_listings()
         current_app.logger.debug('retrieved listings from db')
