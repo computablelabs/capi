@@ -22,25 +22,25 @@ def set_metric(namespace):
     """
     request_time = datetime.now()
     response_payload = []
-    for m in g.metrics:
-        print(m)
-    # for m in g['metrics']:
-    #     response_payload.append(
-    #         {
-    #             'MetricName': m['name'],
-    #             'Dimensions': [
-    #                 {
-    #                     'Name': 'CAPI',
-    #                     'Value': 'requests'
-    #                 }
-    #             ],
-    #             'Timestamp': request_time,
-    #             'Value': m['value'],
-    #             'Unit': 'Milliseconds'
-    #         }
-    #     )
-    # if len(response_payload) > 0:
-    #     response = g.cloudwatch.put_metric_data(
-    #         Namespace=namespace,
-    #         MetricData=response_payload
-    #     )
+    print(f'Metric namespace: {namespace}')
+    for metric in g.metrics:
+        for key in metric:
+            print(f'Adding {key} with value {metric[key]}')
+            response_payload.append(
+                {
+                    'MetricName': 'Response Time',
+                    'Dimensions': [
+                        {
+                            'Name': namespace,
+                            'Value': key
+                        }
+                    ],
+                    'Value': metric[key],
+                    'Unit': 'Milliseconds'
+                }
+            )
+        if len(response_payload) > 0:
+            response = g.cloudwatch.put_metric_data(
+                Namespace=current_app.config['DNS_NAME'],
+                MetricData=response_payload
+            )

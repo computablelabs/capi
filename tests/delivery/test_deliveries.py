@@ -5,7 +5,7 @@ from flask import current_app, g
 from computable.helpers.transaction import call, transact
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance, time_travel
 
-def test_jwt_required(test_client):
+def test_jwt_required(test_client, cloudwatch_client):
     delivery = test_client.get('/deliveries/')
     assert delivery.status_code == 401
 
@@ -172,7 +172,7 @@ def test_approve_datatrust_spending(w3, ether_token, datatrust, user):
     approved_amt = call(ether_token.allowance(buyer, datatrust.address))
     assert approved_amt == w3.toWei(5, 'ether')
 
-def test_no_approved_funds_returns_http412(w3, datatrust, dynamo_table, s3_client, user, pk, test_client):
+def test_no_approved_funds_returns_http412(w3, datatrust, dynamo_table, s3_client, user, pk, test_client, cloudwatch_client):
     buyer = w3.eth.accounts[10]
     listing_hash = w3.keccak(text='cheap warez')
     file_contents = 'all the cheap warez, pay for shipping and handling only'
@@ -231,7 +231,7 @@ def test_no_approved_funds_returns_http412(w3, datatrust, dynamo_table, s3_clien
     )
     assert delivery.status_code == 412
 
-def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk, user, dynamo_table, s3_client, test_client):
+def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk, user, dynamo_table, s3_client, test_client, cloudwatch_client):
     initial_balance = call(ether_token.balance_of(datatrust.address))
     # Add the listing to dynamo
     buyer = w3.eth.accounts[10]

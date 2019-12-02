@@ -1,5 +1,6 @@
 from io import BytesIO
 import json
+from datetime import datetime, timedelta
 import pytest
 from unittest.mock import patch
 from flask import current_app, g
@@ -119,7 +120,7 @@ def test_register_and_confirm(w3, market_token, voting, parameterizer_opts, data
     addr = call(datatrust.get_backend_address())
     assert addr == user
 
-def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, listing, test_client, dynamo_table, s3_client):
+def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, listing, test_client, dynamo_table, s3_client, cloudwatch_client):
     user = w3.eth.defaultAccount
     # needs to be a candidate first...
     maker = w3.eth.accounts[1]
@@ -191,8 +192,13 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert payload['items'][0]['size'] == 45
     assert payload['to_block'] > 0
 
+    # Reading Cloudwatch metrics isn't implemented in moto, but we can at least
+    # see that the metrics were put in the g env
+    print(g.metrics)
+    assert g.metrics == 'foo'
+
 @patch('apis.listing.listings.ListingsRoute.send_data_hash')
-def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s3_client, dynamo_table):
+def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s3_client, dynamo_table, cloudwatch_client):
     # the mocked send_data_hash method must return a uuid, so fake it here
     mock_send.return_value = '123-abc'
 
@@ -248,7 +254,7 @@ def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s
     assert new_listing['Item']['owner'] == test_payload['owner']
     assert new_listing['Item']['size'] == len('a pony'.encode('utf-8'))
 
-def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client):
+def test_send_data_hash_after_mining(w3, listing, datatrust, voting, test_client, cloudwatch_client):
     """
     Test that the data hash is set for a completed listing candidate
     """
