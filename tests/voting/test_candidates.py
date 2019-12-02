@@ -4,7 +4,7 @@ from flask import g
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
 
-def test_get_candidates_application(w3, voting, listing, test_client, dynamo_table):
+def test_get_candidates_application(w3, voting, listing, test_client, dynamo_table, cloudwatch_client):
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='testytest123')
     tx = transact(listing.list(listing_hash, {'from': maker, 'gas_price': w3.toWei(2, 'gwei'), 'gas': 1000000}))
@@ -119,7 +119,7 @@ def test_can_stake(w3, market_token, voting, parameterizer):
     assert stake <= new_mkt_allowance
 
 
-def test_get_candidates_non_application(w3, ether_token, market_token,  voting, parameterizer, reserve, test_client):
+def test_get_candidates_non_application(w3, ether_token, market_token,  voting, parameterizer, reserve, test_client, cloudwatch_client):
     user = w3.eth.defaultAccount
 
     # reparam here as our non application

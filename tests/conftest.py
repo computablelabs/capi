@@ -3,7 +3,7 @@ import json
 from flask import current_app
 import pytest
 import boto3
-from moto import mock_dynamodb2, mock_s3
+from moto import mock_dynamodb2, mock_s3, mock_cloudwatch
 from app import celery as c
 from app.factory import create_app
 from web3 import Web3
@@ -11,6 +11,7 @@ from eth_keys import keys
 from core.protocol import set_w3
 from core.dynamo import set_dynamo_table
 from core.s3 import set_s3_client
+from core.cloudwatch import set_cloudwatch
 import computable # we use this to get the path to the contract abi/bin in the installed lib (rather than copy/paste them)
 from computable.contracts import EtherToken
 from computable.contracts import MarketToken
@@ -285,3 +286,13 @@ def s3_bucket(ctx, s3):
 @pytest.fixture(scope='function')
 def s3_client(s3, s3_bucket):
     set_s3_client(s3)
+
+@pytest.fixture(scope='function')
+def mocked_cloudwatch(aws_creds, ctx):
+    with mock_cloudwatch():
+        cloudwatch = boto3.client('cloudwatch', region_name=current_app.config['REGION'])
+        yield cloudwatch
+
+@pytest.fixture(scope='function')
+def cloudwatch_client(mocked_cloudwatch):
+    set_cloudwatch(mocked_cloudwatch)
