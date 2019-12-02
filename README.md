@@ -41,13 +41,12 @@ each time you start developing. To complete the installation of `capi`, run the
 following commands in your activated virtual environment
 
 ```
-pip install awscli
-pip install boto3
 pip install -r requirements.txt
 ```
-You'll also need to run one additional command:
+You'll also need to run 2 additional commands:
 ```
 pip install web3[tester]
+pip install -i https://test.pypi.org/simple/ computable
 ```
 (The awkward format of this command doesn't mesh well with the
 automatic pip installation, so needs to be done manually). You should

@@ -191,6 +191,30 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert payload['items'][0]['size'] == 45
     assert payload['to_block'] > 0
 
+def test_get_listing(w3, test_client, dynamo_table):
+    # we should be able to fetch the listing we put into protocol above...
+    hashed = w3.keccak(text='testytest123')
+    listing_hash = w3.toHex(hashed)
+    # we re-create the dynamo table per function TODO should we use 'module' ?
+    row = {
+            'listing_hash': listing_hash,
+            'title': 'lol catz 9000',
+            'description': 'all the catz',
+            'license': 'GFU',
+            'file_type': 'gif',
+            'size': 45
+        }
+
+    g.table.put_item(Item=row)
+
+    listing = test_client.get(f'/listings/{listing_hash}')
+    payload = json.loads(listing.data)
+    print(payload)
+    assert listing.status_code == 200
+    assert payload['listing_hash'] == listing_hash
+    assert payload['title'] == 'lol catz 9000'
+    assert payload['size'] == 45
+
 @patch('apis.listing.listings.ListingsRoute.send_data_hash')
 def test_post_listings(mock_send, w3, voting, datatrust, listing, test_client, s3_client, dynamo_table):
     # the mocked send_data_hash method must return a uuid, so fake it here

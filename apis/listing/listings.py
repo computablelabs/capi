@@ -5,8 +5,8 @@ from flask import request, g, current_app
 from flask_restplus import Namespace, Resource
 from celery import uuid
 from core import constants as C
-from core.protocol import is_registered
-from core.dynamo import get_listings
+from core.protocol import is_registered, get_single_listing
+from core.dynamo import get_listing, get_listings
 from apis.serializers import Listing, Listings
 from apis.parsers import from_to_owner, parse_from_to_owner
 from apis.helpers import extract_listing_hashes, listing_hash_join
@@ -21,15 +21,44 @@ api.models['Listing'] = Listing
 api.models['Listings'] = Listings
 api.models['NewListing'] = NewListing
 
+# GET a single listing
+@api.route('/<string:hash>', methods=['GET'])
+class ListingRoute(Resource):
+    @api.response(200, C.SUCCESS)
+    @api.response(404, C.NOT_LISTED)
+    @api.response(404, C.ITEM_NOT_FOUND)
+    @api.marshal_with(Listing)
+    def get(self, hash):
+        """
+        Given a listing hash, fetch it from protocol and dynamo, returning the data
+        """
+        # (owner, supply) from protocol
+        owner_and_supply = get_single_listing(hash)
+        if not owner_and_supply:
+            current_app.logger.info(f'Listing {hash} could not be found on chain')
+            api.abort(404, C.NOT_LISTED)
+        # fetch the dynamo data
+        meta = get_listing(hash)
+        # dynamo wraps the returned payload in 'Item'...
+        listing = meta['Item']
+        if not listing:
+            current_app.logger.info(f'Listing {hash} could not be found in db')
+            api.abort(404, C.ITEM_NOT_FOUND)
+
+        # just append the supply as owner is already there
+        listing.update({'supply': owner_and_supply[1]})
+        return dict(listing), 200
+
+# GET multiple listings or POST a listing
 @api.route('/')
 class ListingsRoute(Resource):
     @api.expect(from_to_owner)
     @api.marshal_with(Listings)
+    @api.response(200, C.SUCCESS)
     def get(self):
         """
         Fetch and return all listings, optionally filtered from a given block number.
         """
-        # TODO implement paging
         args = parse_from_to_owner(from_to_owner.parse_args())
         # protocol stuff... TODO handle blockchain reverts
         current_app.logger.info(f'Fetching listings from block {args["from_block"]} to block {args["to_block"]}')

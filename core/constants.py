@@ -21,10 +21,11 @@ CONTENT_DELIVERED = 'Requested content delivered'
 INSUFFICIENT_PURCHASED = 'Insufficient bytes purchased for request'
 PREVIEW_LISTING_TYPE_ONLY = 'Previews are only available for Listings or Applications'
 
-# DB related messages
+# DB and API related messages
 DB_SUCCESS = 'Database transaction completed successfully'
 ITEM_NOT_FOUND = 'No results returned'
 DB_ERROR = 'Operation failed due to database read/write error'
+SERVER_ERROR = 'Operation failed due to internal server error'
 
 # Protocol related messages
 NOT_REGISTERED = 'This API is not currently the registered datatrust'
@@ -33,6 +34,7 @@ REGISTERED_CANDIDATE = 'This API is an active candidate for datatrust'
 RESOLVED = 'Candidate %s has been marked for resolution'
 NEED_CMT_TO_STAKE = 'Insufficient CMT available to pay the stake for this operation.'
 NEED_CMT_TO_PREVIEW = 'Preview requires that the requester have a CMT balance greater than or equal to the current market stake'
+NOT_LISTED = 'Given listing hash is not a valid Listing'
 
 # Celery related
 CELERY_TASK_TIMEOUT = 5.0 # seconds, only applies to fetching task from redis
