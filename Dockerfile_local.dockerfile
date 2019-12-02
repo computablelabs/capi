@@ -10,6 +10,7 @@ ENV AWS_ACCESS_KEY_ID=$accesskey
 ENV AWS_SECRET_ACCESS_KEY=$secretkey
 
 RUN pip install -r requirements.txt
+RUN pip install -i https://test.pypi.org/simple/ computable
 
 ENV PYTHONPATH := .
 ENV ENV_CONFIG_FILE=/app/config/staging.py
