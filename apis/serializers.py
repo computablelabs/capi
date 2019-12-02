@@ -11,7 +11,8 @@ Listing = Model('Listing', {
     'file_type': fields.String(required=True, description='File content: video, image, audio, etc'),
     'tags': fields.List(fields.String, required=False, description='Tags to categorize and describe the listing file'),
     'owner': fields.String(required=True, description='Public key of the owner'),
-    'size': fields.Integer(required=True, description='Size of listing (in bytes)')
+    'size': fields.Integer(required=True, description='Size of listing (in bytes)'),
+    'supply': fields.Integer(required=False, description='Amount of CMT this listing has accrued')
     })
 
 Listings = Model('Listings', {
