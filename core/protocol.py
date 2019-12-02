@@ -54,6 +54,15 @@ def get_listing():
     l.at(g.w3, current_app.config['LISTING_CONTRACT_ADDRESS'])
     return l
 
+def get_single_listing(listing_hash):
+    l = get_listing()
+    # the provided listing_hash needs to be converted to a byte array
+    b = g.w3.toBytes(hexstr=listing_hash)
+    if call(l.is_listed(b)):
+        return call(l.get_listing(b))
+    else:
+        return None
+
 def get_backend_address():
     d = get_datatrust()
     address = call(d.get_backend_address())
