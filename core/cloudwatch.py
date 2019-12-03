@@ -22,20 +22,19 @@ def set_metric(namespace):
     """
     request_time = datetime.now()
     response_payload = []
-    print(f'Metric namespace: {namespace}')
-    for metric in g.metrics:
-        for key in metric:
-            print(f'Adding {key} with value {metric[key]}')
+    for m in g.metrics:
+        for k in m.keys():
             response_payload.append(
                 {
-                    'MetricName': 'Response Time',
+                    'MetricName': k,
                     'Dimensions': [
                         {
-                            'Name': namespace,
-                            'Value': key
+                            'Name': 'CAPI',
+                            'Value': 'requests'
                         }
                     ],
-                    'Value': metric[key],
+                    'Timestamp': request_time,
+                    'Value': m[k],
                     'Unit': 'Milliseconds'
                 }
             )

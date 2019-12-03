@@ -288,11 +288,11 @@ def s3_client(s3, s3_bucket):
     set_s3_client(s3)
 
 @pytest.fixture(scope='function')
-def mocked_cloudwatch(aws_creds, ctx):
+def cloudwatch_client(ctx, aws_creds):
     with mock_cloudwatch():
         cloudwatch = boto3.client('cloudwatch', region_name=current_app.config['REGION'])
         yield cloudwatch
 
 @pytest.fixture(scope='function')
-def cloudwatch_client(mocked_cloudwatch):
-    set_cloudwatch(mocked_cloudwatch)
+def mocked_cloudwatch(cloudwatch_client):
+    set_cloudwatch(cloudwatch_client)
