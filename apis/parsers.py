@@ -1,10 +1,12 @@
 from flask_restplus import reqparse
+from core.helpers import metrics_collector
 
 from_to_owner = reqparse.RequestParser()
 from_to_owner.add_argument('from-block', type=int, location='args', help='Block number to begin scanning from')
 from_to_owner.add_argument('to-block', type=int, location='args', help='Block number (inclusive) to end scanning at')
 from_to_owner.add_argument('owner', location='args', help='Ethereum account which owns this candidate')
 
+@metrics_collector
 def parse_from_to_owner(args):
     """
     return a dict of the from-block and owner args if present,

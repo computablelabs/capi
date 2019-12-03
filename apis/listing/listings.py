@@ -7,6 +7,7 @@ from celery import uuid
 from core import constants as C
 from core.protocol import is_registered, get_single_listing
 from core.dynamo import get_listing, get_listings
+from core.helpers import metrics_collector
 from apis.serializers import Listing, Listings
 from apis.parsers import from_to_owner, parse_from_to_owner
 from apis.helpers import extract_listing_hashes, listing_hash_join
@@ -133,12 +134,14 @@ class ListingsRoute(Resource):
 
             return dict(message=C.NEW_LISTING_SUCCESS, task_id=uid), 201
 
+    @metrics_collector
     def send_data_hash(self, tx_hash, listing, data_hash):
         uid = uuid()
         send_data_hash_after_mining.s(tx_hash,listing,data_hash).apply_async(task_id=uid)
 
         return uid
 
+    @metrics_collector
     def get_payload(self):
         """
         """
@@ -157,6 +160,7 @@ class ListingsRoute(Resource):
 
         return payload
 
+    @metrics_collector
     def get_filename(self):
         """
         In case the original filenames is useful, persist it with the upload metadata
@@ -167,6 +171,7 @@ class ListingsRoute(Resource):
             return filenames[0] if filenames[0] else None
         return None
 
+    @metrics_collector
     def upload_to_s3(self, listing_hash, location):
         """
         Upload file data to s3, keying it with the listing_hash
@@ -185,6 +190,7 @@ class ListingsRoute(Resource):
         with open(location, 'rb') as data:
             res = g.s3.upload_fileobj(data, current_app.config['S3_DESTINATION'], listing_hash)
 
+    @metrics_collector
     def get_keccak(self, location):
         keccak_hash = None
         with open(location, 'rb') as data:
@@ -194,6 +200,7 @@ class ListingsRoute(Resource):
                 b = data.read(1024*1024)
         return keccak_hash
 
+    @metrics_collector
     def save_to_db(self, payload):
         response = g.table.put_item(
             Item=payload
