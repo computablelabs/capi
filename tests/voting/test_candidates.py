@@ -29,6 +29,32 @@ def test_get_candidates_application(w3, voting, listing, test_client, dynamo_tab
     assert payload['items'][0]['title'] == 'so many catz'
     assert payload['to_block'] > 0
 
+def test_get_candidate(w3, test_client, dynamo_table):
+    # we'll just re-use the above candidate...
+    b = w3.keccak(text='testytest123')
+    applicant = w3.toHex(b)
+
+    # we re-create the dynamo table per function TODO should we use 'module' ?
+    row = {
+            'listing_hash': applicant,
+            'title': 'I can haz application',
+            'description': 'catz applying for listings',
+            'license': 'GFU',
+            'file_type': 'gif',
+            'size': 1000
+        }
+
+    g.table.put_item(Item=row)
+
+    candidate = test_client.get(f'/candidates/application/{applicant}')
+    payload = json.loads(candidate.data)
+    print(payload)
+    assert candidate.status_code == 200
+    assert payload['kind'] == 1
+    assert payload['listing_hash'] == applicant
+    assert payload['title'] == 'I can haz application'
+    assert payload['size'] == 1000
+
 def test_has_ethertoken(w3, ether_token):
     user = w3.eth.defaultAccount
     user_bal = call(ether_token.balance_of(user))

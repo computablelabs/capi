@@ -10,6 +10,3 @@ redis==3.3.8
 Flask-Cors==3.0.8
 Flask-JWT-Extended==3.23.0
 freezegun==0.3.12
-
---extra-index-url https://test.pypi.org/simple
-computable==3.0.1
