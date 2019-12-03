@@ -84,7 +84,7 @@ def test_create_candidate(w3, voting, datatrust, listing):
 
     assert call(voting.candidate_is(listing_hash, C.candidate_kinds['application']))
 
-def test_preview(w3, pk, user, dynamo_table, s3_client, test_client):
+def test_preview(w3, pk, user, dynamo_table, s3_client, test_client, mocked_cloudwatch):
     assert has_stake(user)
 
     listing_hash = w3.keccak(text='We Want. A shrubbery!')

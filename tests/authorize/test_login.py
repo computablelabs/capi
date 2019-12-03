@@ -7,7 +7,7 @@ from flask_jwt_extended import decode_token
 from freezegun import freeze_time
 from core import constants as C
 
-def test_valid_login(w3, pk, user, test_client):
+def test_valid_login(w3, pk, user, test_client, mocked_cloudwatch):
     # use our custom user to sign a message
     user = w3.eth.accounts[10]
     msg = 'A duck!'
@@ -32,11 +32,11 @@ def test_valid_login(w3, pk, user, test_client):
     expiration = datetime.now() + timedelta(days=current_app.config['EXPIRES_IN_DAYS'])
     assert claims['exp'] <= expiration.timestamp()
 
-def test_no_login_payload(test_client):
+def test_no_login_payload(test_client, mocked_cloudwatch):
     login = test_client.post('/authorize/')
     assert login.status_code == 400
 
-def test_expired_token(w3, pk, user, test_client):
+def test_expired_token(w3, pk, user, test_client, mocked_cloudwatch):
     # use our custom user to sign a message
     user = w3.eth.accounts[10]
     msg = 'How much do you hate the Romans?'
