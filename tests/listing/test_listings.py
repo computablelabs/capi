@@ -193,7 +193,18 @@ def test_get_listings(w3, market_token, voting, parameterizer_opts, datatrust, l
     assert payload['items'][0]['size'] == 45
     assert payload['to_block'] > 0
 
-def test_get_listing(w3, test_client, dynamo_table):
+    # Reading Cloudwatch metrics isn't implemented in moto, but we can at least
+    # see that the metrics were put in the g env
+    assert len(g.metrics) > 0
+    metrics_keys = set()
+    for metric in g.metrics:
+        for key in metric.keys():
+            metrics_keys.add(key)
+    assert 'get_listing' in metrics_keys
+    assert 'get_listings' in metrics_keys
+    assert 'set_dynamo_table' in metrics_keys
+
+def test_get_listing(w3, test_client, dynamo_table, mocked_cloudwatch):
     # we should be able to fetch the listing we put into protocol above...
     hashed = w3.keccak(text='testytest123')
     listing_hash = w3.toHex(hashed)
@@ -215,6 +226,7 @@ def test_get_listing(w3, test_client, dynamo_table):
     assert payload['listing_hash'] == listing_hash
     assert payload['title'] == 'lol catz 9000'
     assert payload['size'] == 45
+
     # Reading Cloudwatch metrics isn't implemented in moto, but we can at least
     # see that the metrics were put in the g env
     assert len(g.metrics) > 0
@@ -223,7 +235,7 @@ def test_get_listing(w3, test_client, dynamo_table):
         for key in metric.keys():
             metrics_keys.add(key)
     assert 'get_listing' in metrics_keys
-    assert 'get_listings' in metrics_keys
+    assert 'get_single_listing' in metrics_keys
     assert 'set_dynamo_table' in metrics_keys
 
 @patch('apis.listing.listings.ListingsRoute.send_data_hash')

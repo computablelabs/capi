@@ -40,7 +40,7 @@ def test_get_candidates_application(w3, voting, listing, test_client, dynamo_tab
     assert 'extract_listing_hashes' in metrics_keys
     assert 'extract_listing_hashes_to_block' in metrics_keys
 
-def test_get_candidate(w3, test_client, dynamo_table):
+def test_get_candidate(w3, test_client, dynamo_table, mocked_cloudwatch):
     # we'll just re-use the above candidate...
     b = w3.keccak(text='testytest123')
     applicant = w3.toHex(b)
@@ -65,6 +65,16 @@ def test_get_candidate(w3, test_client, dynamo_table):
     assert payload['listing_hash'] == applicant
     assert payload['title'] == 'I can haz application'
     assert payload['size'] == 1000
+
+    # Reading Cloudwatch metrics isn't implemented in moto, but we can at least
+    # see that the metrics were put in the g env
+    assert len(g.metrics) > 0
+    metrics_keys = set()
+    for metric in g.metrics:
+        for key in metric.keys():
+            metrics_keys.add(key)
+    assert 'get_voting' in metrics_keys
+    assert 'get_application' in metrics_keys
 
 def test_has_ethertoken(w3, ether_token):
     user = w3.eth.defaultAccount
