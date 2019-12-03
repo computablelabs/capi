@@ -35,6 +35,7 @@ RESOLVED = 'Candidate %s has been marked for resolution'
 NEED_CMT_TO_STAKE = 'Insufficient CMT available to pay the stake for this operation.'
 NEED_CMT_TO_PREVIEW = 'Preview requires that the requester have a CMT balance greater than or equal to the current market stake'
 NOT_LISTED = 'Given listing hash is not a valid Listing'
+NOT_A_CANDIDATE = 'Given hash is not a valid candidate'
 
 # Celery related
 CELERY_TASK_TIMEOUT = 5.0 # seconds, only applies to fetching task from redis

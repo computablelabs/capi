@@ -209,7 +209,6 @@ def test_get_listing(w3, test_client, dynamo_table):
 
     listing = test_client.get(f'/listings/{listing_hash}')
     payload = json.loads(listing.data)
-    print(payload)
     assert listing.status_code == 200
     assert payload['listing_hash'] == listing_hash
     assert payload['title'] == 'lol catz 9000'
