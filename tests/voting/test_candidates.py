@@ -4,7 +4,7 @@ from flask import g
 from computable.helpers.transaction import call, transact
 from computable.contracts.constants import PLURALITY
 
-def test_get_candidates_application(w3, voting, listing, test_client, dynamo_table, cloudwatch_client):
+def test_get_candidates_application(w3, voting, listing, test_client, dynamo_table, mocked_cloudwatch):
     maker = w3.eth.accounts[1]
     listing_hash = w3.keccak(text='testytest123')
     tx = transact(listing.list(listing_hash, {'from': maker, 'gas_price': w3.toWei(2, 'gwei'), 'gas': 1000000}))
@@ -28,6 +28,17 @@ def test_get_candidates_application(w3, voting, listing, test_client, dynamo_tab
     assert payload['items'][0]['listing_hash'] == w3.toHex(listing_hash) # payload hashes are hex
     assert payload['items'][0]['title'] == 'so many catz'
     assert payload['to_block'] > 0
+
+    # Reading Cloudwatch metrics isn't implemented in moto, but we can at least
+    # see that the metrics were put in the g env
+    assert len(g.metrics) > 0
+    metrics_keys = set()
+    for metric in g.metrics:
+        for key in metric.keys():
+            metrics_keys.add(key)
+    assert 'get_voting' in metrics_keys
+    assert 'extract_listing_hashes' in metrics_keys
+    assert 'extract_listing_hashes_to_block' in metrics_keys
 
 def test_get_candidate(w3, test_client, dynamo_table):
     # we'll just re-use the above candidate...
@@ -119,7 +130,7 @@ def test_can_stake(w3, market_token, voting, parameterizer):
     assert stake <= new_mkt_allowance
 
 
-def test_get_candidates_non_application(w3, ether_token, market_token,  voting, parameterizer, reserve, test_client, cloudwatch_client):
+def test_get_candidates_non_application(w3, ether_token, market_token,  voting, parameterizer, reserve, mocked_cloudwatch, test_client):
     user = w3.eth.defaultAccount
 
     # reparam here as our non application
@@ -139,3 +150,14 @@ def test_get_candidates_non_application(w3, ether_token, market_token,  voting, 
     # this reparam is the newest
     assert payload['items'][1] == w3.toHex(hash) # payload hashes are hex
     assert payload['to_block'] > 0
+
+    # Reading Cloudwatch metrics isn't implemented in moto, but we can at least
+    # see that the metrics were put in the g env
+    assert len(g.metrics) > 0
+    metrics_keys = set()
+    for metric in g.metrics:
+        for key in metric.keys():
+            metrics_keys.add(key)
+    assert 'get_voting' in metrics_keys
+    assert 'extract_listing_hashes' in metrics_keys
+    assert 'extract_listing_hashes_to_block' in metrics_keys
