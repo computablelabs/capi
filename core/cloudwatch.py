@@ -16,7 +16,7 @@ def set_cloudwatch(cloudwatch=None):
             cloudwatch = boto3.client('cloudwatch', region_name=current_app.config['REGION'])
         g.cloudwatch = cloudwatch
 
-def set_metric(namespace):
+def set_metric(route):
     """
     Send any available metrics from the request to Cloudwatch
     """
@@ -29,7 +29,7 @@ def set_metric(namespace):
                     'MetricName': k,
                     'Dimensions': [
                         {
-                            'Name': 'CAPI',
+                            'Name': route,
                             'Value': 'requests'
                         }
                     ],
