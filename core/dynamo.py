@@ -33,3 +33,13 @@ def get_listings():
     else:
         current_app.logger.info('no items returned in db query')
         return {}
+
+def get_listing(hash):
+    """
+    Given a listing hash fetch a single listing from dynamo
+    """
+    return g.table.get_item(
+        Key={
+            'listing_hash': hash # should already be in the correct format here
+        }
+    )

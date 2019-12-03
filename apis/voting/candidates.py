@@ -3,14 +3,17 @@ from flask_restplus import Namespace, Resource
 from apis.helpers import extract_listing_hashes, extract_listing_hashes_to_block, listing_hash_join
 from apis.serializers import Listing, Listings
 from apis.parsers import from_to_owner, parse_from_to_owner
+from core import constants as C
+from core.protocol import get_application
+from core.dynamo import get_listing, get_listings
 from .parsers import parse_candidates_by_kind
-from .serializers import Candidates
+from .serializers import Applicant, Candidates
 from .helpers import filter_candidate_added, filter_candidate_removed
-from core.dynamo import get_listings
 
 api = Namespace('Candidates', description='Operations pertaining to the Computable Protocol Candidate Object')
 
 api.models['Candidates'] = Candidates
+api.models['Applicant'] = Applicant
 api.models['Listing'] = Listing
 api.models['Listings'] = Listings
 
@@ -63,6 +66,38 @@ class ListingCandidatesRoute(Resource):
         it, tb = listing_hash_join(added, all_the_dynamo, removed_hashes)
 
         return dict(items=it, from_block=args['from_block'], to_block=tb), 200
+
+@api.route('/application/<string:hash>', methods=['GET'])
+class ListingCandidateRoute(Resource):
+    @api.response(200, C.SUCCESS)
+    @api.response(404, C.NOT_A_CANDIDATE)
+    @api.response(404, C.ITEM_NOT_FOUND)
+    @api.marshal_with(Applicant)
+    def get(self, hash):
+        """
+        given a listing hash representing an applicant, fetch it from protocol and return it,
+        if it is actually an application. otherwise throw
+        """
+        # (kind, owner, stake, vote_by, yea, nay) from protocol
+        applicant = get_application(hash)
+        if not applicant:
+            current_app.logger.info(f'candidate {hash} is not an applicant')
+            api.abort(404, C.NOT_A_CANDIDATE)
+        # create a dictionary that we can append the dynamo data to
+        candidate = dict(kind=applicant[0], owner=applicant[1], stake=applicant[2],
+            vote_by=applicant[3], yea=applicant[4], nay=applicant[5])
+
+        # fetch the dynamo data (to dynamo an applicant is a listing)
+        meta = get_listing(hash)
+        # dynamo wraps the returned payload in 'Item'...
+        listing = meta['Item']
+        if not listing:
+            current_app.logger.info(f'Listing {hash} could not be found in db')
+            api.abort(404, C.ITEM_NOT_FOUND)
+
+        # merge them together as one big "application candidate"
+        candidate.update(listing)
+        return candidate, 200
 
 # NOTE: type and kind used interchangeably as reserved keywords are dumb...
 @api.route('/<string:type>', methods=['GET'])

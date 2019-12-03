@@ -39,6 +39,19 @@ def get_voting():
     v.at(g.w3, current_app.config['VOTING_CONTRACT_ADDRESS'])
     return v
 
+def get_application(hash):
+    """
+    given a hash for a listing applicant, return its candidate if it
+    is an applicant, none otherwise
+    """
+    v = get_voting()
+    b = g.w3.toBytes(hexstr=hash)
+    if call(v.candidate_is(b, 1)):
+        return call(v.get_candidate(b))
+    else:
+        return None
+
+
 def get_parameterizer():
     p = Parameterizer(g.w3.eth.defaultAccount)
     p.at(g.w3, current_app.config['PARAMETERIZER_CONTRACT_ADDRESS'])
@@ -53,6 +66,15 @@ def get_listing():
     l = Listing(g.w3.eth.defaultAccount)
     l.at(g.w3, current_app.config['LISTING_CONTRACT_ADDRESS'])
     return l
+
+def get_single_listing(listing_hash):
+    l = get_listing()
+    # the provided listing_hash needs to be converted to a byte array
+    b = g.w3.toBytes(hexstr=listing_hash)
+    if call(l.is_listed(b)):
+        return call(l.get_listing(b))
+    else:
+        return None
 
 def get_backend_address():
     d = get_datatrust()
