@@ -39,6 +39,19 @@ def get_voting():
     v.at(g.w3, current_app.config['VOTING_CONTRACT_ADDRESS'])
     return v
 
+def get_application(hash):
+    """
+    given a hash for a listing applicant, return its candidate if it
+    is an applicant, none otherwise
+    """
+    v = get_voting()
+    b = g.w3.toBytes(hexstr=hash)
+    if call(v.candidate_is(b, 1)):
+        return call(v.get_candidate(b))
+    else:
+        return None
+
+
 def get_parameterizer():
     p = Parameterizer(g.w3.eth.defaultAccount)
     p.at(g.w3, current_app.config['PARAMETERIZER_CONTRACT_ADDRESS'])
