@@ -58,8 +58,8 @@ class Delivery(Resource):
                         # before we can call delivered we must make sure the accessed tx has mined
                         accessed_rct_hash = wait_for_receipt(accessed_tx, price_and_time[1])
                         current_app.logger.info(f'listing_accessed transaction {accessed_rct_hash} mined, calling for delivery completion')
-                        # now see if we can get paid (not blocking here atm...)
-                        delivered(delivery_hash, delivery_url, price_and_time[1])
+                        # now see if we can get paid
+                        delivered(delivery_hash, delivery_url, price_and_time[0])
                     except Exception as error:
                         current_app.logger.error(f'Error removing file or calling datatrust.delivered: {error}')
                     return response
