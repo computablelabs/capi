@@ -10,7 +10,7 @@ from web3.middleware import geth_poa_middleware
 from computable.contracts import MarketToken, Voting, Parameterizer, Datatrust, Listing
 from computable.helpers.transaction import call
 from .helpers import send_or_transact
-from core.helpers import metrics_collector
+from core.helpers import metrics_collector, set_gas_prices
 
 @metrics_collector
 def set_w3(w3=None):
@@ -117,21 +117,28 @@ def get_delivery(delivery_hash):
     return call(d.get_delivery(delivery_hash))
 
 @metrics_collector
-def listing_accessed(delivery_hash, listing, amount):
+def listing_accessed(delivery_hash, listing, amount, gas_price):
     """
     Commit to protocol the listing accessed details
     """
     d = get_datatrust()
-    tx = send_or_transact(d.listing_accessed(listing, delivery_hash, amount))
+    # we must set the gas prices appropriately
+    t = d.listing_accessed(listing, delivery_hash, amount)
+    args = set_gas_prices(t, gas_price)
+    tx = send_or_transact(args)
+    # do not block here so just return the unmined tx
     return tx
 
 @metrics_collector
-def delivered(delivery_hash, url):
+def delivered(delivery_hash, url, gas_price):
     """
     Mark the delivery as complete in protocol
     """
     d = get_datatrust()
-    tx = send_or_transact(d.delivered(delivery_hash, url))
+    t = d.delivered(delivery_hash, url)
+    args = set_gas_prices(t, gas_price)
+    tx = send_or_transact(args)
+    # do not block, simply return the unmined tx
     return tx
 
 @metrics_collector
