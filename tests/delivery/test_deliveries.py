@@ -327,3 +327,5 @@ def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk,
     assert 'get_bytes_purchased' in metrics_keys
     assert 'listing_accessed' in metrics_keys
     assert 'delivered' in metrics_keys
+    assert 'get_listing_mimetype_and_size' in metrics_keys
+    assert 'get_listing_and_meta' in metrics_keys
