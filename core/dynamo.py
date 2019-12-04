@@ -6,8 +6,10 @@ config object at initialization (with test handled via conftest)
 import os
 from flask import current_app, g
 import boto3
+from core.helpers import metrics_collector
 # from botocore.exceptions import ClientError
 
+@metrics_collector
 def set_dynamo_table(db=None):
     """
     place a dynamo table in the global env for this request
@@ -20,6 +22,7 @@ def set_dynamo_table(db=None):
 
         g.table = db.Table(current_app.config['TABLE_NAME'])
 
+@metrics_collector
 def get_listings():
     """
     Fetch and return all DB listings
@@ -34,6 +37,7 @@ def get_listings():
         current_app.logger.info('no items returned in db query')
         return {}
 
+@metrics_collector
 def get_listing(hash):
     """
     Given a listing hash fetch a single listing from dynamo

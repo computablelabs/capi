@@ -1,13 +1,17 @@
 from flask import g
+from core.helpers import metrics_collector
+
 """
 Some helpers are useful to more than one namespace.
 """
+@metrics_collector
 def extract_listing_hashes(logs):
     """
     Return only the listing hashes present in a given collection of logs
     """
     return list(map(lambda log: g.w3.toHex(log['args']['hash']), logs))
 
+@metrics_collector
 def extract_listing_hashes_to_block(logs, filter_by=None):
     """
     Return both a list of hashes present in the given logs as well as the highest block number seen
@@ -29,6 +33,7 @@ def extract_listing_hashes_to_block(logs, filter_by=None):
 
     return hashes, to_block
 
+@metrics_collector
 def listing_hash_join(logs, candidates, filter_by=None):
     """
     given a list of evm logs and an array of dynamo 'listings' (or any object with a 'listing_hash' attribute)

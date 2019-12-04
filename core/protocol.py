@@ -10,7 +10,9 @@ from web3.middleware import geth_poa_middleware
 from computable.contracts import MarketToken, Voting, Parameterizer, Datatrust, Listing
 from computable.helpers.transaction import call
 from .helpers import send_or_transact
+from core.helpers import metrics_collector, set_gas_prices
 
+@metrics_collector
 def set_w3(w3=None):
     """
     NOTE: test env will pass a web3 instance here
@@ -29,16 +31,19 @@ def set_w3(w3=None):
             if current_app.config['DEVELOPMENT'] == True:
                 g.w3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
+@metrics_collector
 def get_market_token():
     mt = MarketToken(g.w3.eth.defaultAccount)
     mt.at(g.w3, current_app.config['MARKET_TOKEN_CONTRACT_ADDRESS'])
     return mt
 
+@metrics_collector
 def get_voting():
     v = Voting(g.w3.eth.defaultAccount)
     v.at(g.w3, current_app.config['VOTING_CONTRACT_ADDRESS'])
     return v
 
+@metrics_collector
 def get_application(hash):
     """
     given a hash for a listing applicant, return its candidate if it
@@ -52,21 +57,25 @@ def get_application(hash):
         return None
 
 
+@metrics_collector
 def get_parameterizer():
     p = Parameterizer(g.w3.eth.defaultAccount)
     p.at(g.w3, current_app.config['PARAMETERIZER_CONTRACT_ADDRESS'])
     return p
 
+@metrics_collector
 def get_datatrust():
     d = Datatrust(g.w3.eth.defaultAccount)
     d.at(g.w3, current_app.config['DATATRUST_CONTRACT_ADDRESS'])
     return d
 
+@metrics_collector
 def get_listing():
     l = Listing(g.w3.eth.defaultAccount)
     l.at(g.w3, current_app.config['LISTING_CONTRACT_ADDRESS'])
     return l
 
+@metrics_collector
 def get_single_listing(listing_hash):
     l = get_listing()
     # the provided listing_hash needs to be converted to a byte array
@@ -76,18 +85,21 @@ def get_single_listing(listing_hash):
     else:
         return None
 
+@metrics_collector
 def get_backend_address():
     d = get_datatrust()
     address = call(d.get_backend_address())
     current_app.logger.info(f'backend address from protocol is {address}')
     return address
 
+@metrics_collector
 def get_backend_url():
     d = get_datatrust()
     url = call(d.get_backend_url())
     current_app.logger.info(f'backend url from protocol is {url}')
     return url
 
+@metrics_collector
 def is_registered():
     """
     Check that this API is registered as the datatrust for a given market by
@@ -96,6 +108,7 @@ def is_registered():
     address = get_backend_address()
     return address == current_app.config['PUBLIC_KEY']
 
+@metrics_collector
 def get_delivery(delivery_hash):
     """
     Returns owner, bytes_requested, and bytes_delivered for a delivery
@@ -103,22 +116,32 @@ def get_delivery(delivery_hash):
     d = get_datatrust()
     return call(d.get_delivery(delivery_hash))
 
-def listing_accessed(delivery_hash, listing, amount):
+@metrics_collector
+def listing_accessed(delivery_hash, listing, amount, gas_price):
     """
     Commit to protocol the listing accessed details
     """
     d = get_datatrust()
-    tx = send_or_transact(d.listing_accessed(listing, delivery_hash, amount))
+    # we must set the gas prices appropriately
+    t = d.listing_accessed(listing, delivery_hash, amount)
+    args = set_gas_prices(t, gas_price)
+    tx = send_or_transact(args)
+    # do not block here so just return the unmined tx
     return tx
 
-def delivered(delivery_hash, url):
+@metrics_collector
+def delivered(delivery_hash, url, gas_price):
     """
     Mark the delivery as complete in protocol
     """
     d = get_datatrust()
-    tx = send_or_transact(d.delivered(delivery_hash, url))
+    t = d.delivered(delivery_hash, url)
+    args = set_gas_prices(t, gas_price)
+    tx = send_or_transact(args)
+    # do not block, simply return the unmined tx
     return tx
 
+@metrics_collector
 def get_bytes_purchased(address):
     """
     Return the number of bytes purchased by the address
