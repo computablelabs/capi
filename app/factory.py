@@ -31,7 +31,7 @@ def create_app(app_name=a_name, **kwargs):
     # register the CLI admin blueprint
     app.register_blueprint(admin)
     # Allow CORS
-    CORS(app, origins='*', expose_headers=['Content-Disposition'], send_wildcard=True)
+    CORS(app, origins='*', expose_headers=['Content-Disposition'])
     # initialize the celery with this app if present
     if kwargs.get('celery'):
         initialize(kwargs.get('celery'), app)
