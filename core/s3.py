@@ -5,7 +5,9 @@ config object at initialization (with tests handled via conftest)
 """
 from flask import current_app, g
 import boto3
+from core.helpers import metrics_collector
 
+@metrics_collector
 def set_s3_client(s3=None):
     """
     Place a boto3 s3 client in the global env for this request
@@ -17,6 +19,7 @@ def set_s3_client(s3=None):
             s3 = boto3.client('s3', region_name=current_app.config['REGION'])
         g.s3 = s3
 
+@metrics_collector
 def get_listing_mimetype_and_size(hash):
     """
     Return the mimetype and filesize for a given listing
@@ -34,6 +37,7 @@ def get_listing_mimetype_and_size(hash):
     else:
         return 'unknown', 0
 
+@metrics_collector
 def get_listing_and_meta(hash):
     """
     Fetch listing data from s3, write it to the temp storage location, and return its meta data

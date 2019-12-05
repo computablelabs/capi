@@ -2,8 +2,10 @@ import pytest
 import json
 from eth_account.messages import encode_defunct
 from flask import current_app, g
+from unittest.mock import patch
 from computable.helpers.transaction import call, transact
 from core.protocol import has_stake
+from apis.delivery.tasks import delivered_async
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance, time_travel
 
 def test_jwt_required(test_client, mocked_cloudwatch):
@@ -231,7 +233,9 @@ def test_no_approved_funds_returns_http412(w3, datatrust, dynamo_table, s3_clien
     )
     assert delivery.status_code == 412
 
-def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk, user, dynamo_table, s3_client, test_client, mocked_cloudwatch):
+@patch('apis.delivery.deliveries.DeliveryRoute.call_delivered')
+def test_successful_delivery(mock_call, w3, ether_token, parameterizer_opts, datatrust, pk, user, dynamo_table, s3_client, test_client, mocked_cloudwatch):
+    mock_call.return_value = None # we'll instead call the async method synchronously...
     initial_balance = call(ether_token.balance_of(datatrust.address))
     # Add the listing to dynamo
     buyer = w3.eth.accounts[10]
@@ -292,6 +296,19 @@ def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk,
         headers=headers
     )
 
+    # things we need to celery method manually
+    # delivery_hash -> delivery_hash
+    # delivery_url ->  hash any string here
+    # listing_accessed transaction hash -> use eth.getTransactionByBlock
+    # price_and_time -> use POA defaults here
+
+    # let's assume the transaction is the first one in the latest block
+    tx_data = w3.eth.getTransactionByBlock('latest', 0)
+    tx_hex = tx_data['hash']
+
+    delivered_async.s(w3.toHex(delivery_hash), w3.toHex(w3.keccak(text='are you suggesting coconuts migrate?')),
+        w3.toHex(tx_hex), 2, 600).apply()
+
     # Datatrust must get paid
     cost_per_byte = parameterizer_opts['cost_per_byte']
     backend_payment = parameterizer_opts['backend_payment']
@@ -327,3 +344,5 @@ def test_successful_delivery(w3, ether_token, parameterizer_opts, datatrust, pk,
     assert 'get_bytes_purchased' in metrics_keys
     assert 'listing_accessed' in metrics_keys
     assert 'delivered' in metrics_keys
+    assert 'get_listing_mimetype_and_size' in metrics_keys
+    assert 'get_listing_and_meta' in metrics_keys
