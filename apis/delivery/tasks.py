@@ -5,7 +5,7 @@ import core.constants as C
 from core.helpers import wait_for_receipt
 
 @celery.task
-def delivered_async(delivery_hash, delivery_url, accessed_tx, price_and_time):
+def delivered_async(delivery_hash, delivery_url, accessed_tx, price, duration):
     """
     async celery task used by the datatrust to report that a delivery was made.
 
@@ -19,12 +19,17 @@ def delivered_async(delivery_hash, delivery_url, accessed_tx, price_and_time):
     # must be set in a worker (which runs in its own app)
     set_w3()
 
+    # these have been hex_stringified by the endpoint so celery can serialize them, undo that...
+    hash = g.w3.toBytes(hexstr=delivery_hash)
+    url = g.w3.toBytes(hexstr=delivery_url)
+
     # before we can call delivered we must make sure the accessed tx has mined
     current_app.logger.info(C.WAITING_FOR_RECEIPT, accessed_tx)
-    accessed_rct_hash = wait_for_receipt(accessed_tx, price_and_time[1])
+    # accessed_tx can stay a string here
+    accessed_rct_hash = wait_for_receipt(accessed_tx, duration)
     current_app.logger.info(f'listing_accessed transaction {accessed_rct_hash} mined, calling for delivery completion')
     # now see if we can get paid
-    del_tx = delivered(delivery_hash, delivery_url, price_and_time[0])
+    del_tx = delivered(hash, url, price)
     current_app.logger.info(C.WAITING_FOR_RECEIPT, del_tx)
     # return the transaction hash as a hex
-    return wait_for_receipt(del_tx, price_and_time[1])
+    return wait_for_receipt(del_tx, duration)
