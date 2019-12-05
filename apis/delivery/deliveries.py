@@ -73,10 +73,10 @@ class DeliveryRoute(Resource):
         """
         abstracted method to call celery task. easy to mock this way
         """
-        # stringify the args so celery can serialize them
-        hash_str = g.w3.toHex(hash)
-        url_str = g.w3.toHex(url)
-        tx_str = g.w3.toHex(tx)
+        # stringify the args so celery can serialize them if needed
+        hash_str = hash if isinstance(hash, str) else g.w3.toHex(hash)
+        url_str = g.w3.toHex(url) # we know it is not a str
+        tx_str = tx if isinstance(tx, str) else g.w3.toHex(tx) # should not be a str, but just in case
         price = price_and_time[0]
         duration = price_and_time[1]
         # NOTE do not store the results of delivered tasks
