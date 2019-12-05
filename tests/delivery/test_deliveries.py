@@ -306,8 +306,8 @@ def test_successful_delivery(mock_call, w3, ether_token, parameterizer_opts, dat
     tx_data = w3.eth.getTransactionByBlock('latest', 0)
     tx_hex = tx_data['hash']
 
-    delivered_async.s(delivery_hash, w3.keccak(text='are you suggesting coconuts migrate?'),
-        tx_hex, [2, 600]).apply()
+    delivered_async.s(w3.toHex(delivery_hash), w3.toHex(w3.keccak(text='are you suggesting coconuts migrate?')),
+        w3.toHex(tx_hex), 2, 600).apply()
 
     # Datatrust must get paid
     cost_per_byte = parameterizer_opts['cost_per_byte']

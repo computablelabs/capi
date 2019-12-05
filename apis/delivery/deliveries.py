@@ -73,5 +73,11 @@ class DeliveryRoute(Resource):
         """
         abstracted method to call celery task. easy to mock this way
         """
-        # do not store the results of delivered tasks
-        delivered_async.s(hash, url, tx, price_and_time).apply_async(ignore_result=True)
+        # stringify the args so celery can serialize them
+        hash_str = g.w3.toHex(hash)
+        url_str = g.w3.toHex(url)
+        tx_str = g.w3.toHex(tx)
+        price = price_and_time[0]
+        duration = price_and_time[1]
+        # NOTE do not store the results of delivered tasks
+        delivered_async.s(hash_str, url_str, tx_str, price, duration).apply_async(ignore_result=True)
