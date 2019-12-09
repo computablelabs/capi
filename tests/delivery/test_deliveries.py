@@ -6,6 +6,7 @@ from unittest.mock import patch
 from computable.helpers.transaction import call, transact
 from core.protocol import has_stake
 from apis.delivery.tasks import delivered_async
+from apis.delivery.helpers import was_delivered
 from tests.helpers import maybe_transfer_market_token, maybe_increase_market_token_allowance, time_travel
 
 def test_jwt_required(test_client, mocked_cloudwatch):
@@ -233,6 +234,12 @@ def test_no_approved_funds_returns_http412(w3, datatrust, dynamo_table, s3_clien
     )
     assert delivery.status_code == 412
 
+def test_was_not_delivered(w3):
+    buyer = w3.eth.accounts[10]
+    delivery_hash = w3.keccak(text='monty_pythons_delivery_hash')
+
+    assert not was_delivered(delivery_hash, buyer)
+
 @patch('apis.delivery.deliveries.DeliveryRoute.call_delivered')
 def test_successful_delivery(mock_call, w3, ether_token, parameterizer_opts, datatrust, pk, user, dynamo_table, s3_client, test_client, mocked_cloudwatch):
     mock_call.return_value = None # we'll instead call the async method synchronously...
@@ -346,3 +353,9 @@ def test_successful_delivery(mock_call, w3, ether_token, parameterizer_opts, dat
     assert 'delivered' in metrics_keys
     assert 'get_listing_mimetype_and_size' in metrics_keys
     assert 'get_listing_and_meta' in metrics_keys
+
+def test_was_delivered(w3):
+    buyer = w3.eth.accounts[10]
+    delivery_hash = w3.keccak(text='monty_pythons_delivery_hash')
+
+    assert was_delivered(delivery_hash, buyer)
