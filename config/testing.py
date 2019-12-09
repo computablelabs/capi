@@ -14,3 +14,5 @@ CELERY_RESULT_BACKEND = None
 
 # JWT
 JWT_SECRET_KEY = 'super-secret'
+
+GENESIS_BLOCK = 0

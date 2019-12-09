@@ -1,12 +1,13 @@
 import os
-from flask import request, g, current_app, send_file, after_this_request
+from flask import current_app, g, send_file, after_this_request
 from flask_restplus import Namespace, Resource
-from flask_jwt_extended import jwt_required, decode_token, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from core import constants as C
 from core.helpers import get_gas_price_and_wait_time
-from core.protocol import get_delivery, listing_accessed, get_bytes_purchased
+from core.protocol import get_bytes_purchased
 from .parsers import delivery_parser, parse_query
 from .tasks import delivered_async
+from .helpers import get_delivery, listing_accessed, was_delivered
 
 api = Namespace('Delivery', description='Delivery endpoint for requesting purchased payloads')
 
@@ -27,16 +28,27 @@ class DeliveryRoute(Resource):
         owner = get_jwt_identity()
         current_app.logger.info(f'Retrieving {delivery_hash} for delivery')
         delivery_owner, requested_bytes, delivered_bytes = get_delivery(delivery_hash)
+        # NOTE that this line line confirms the existence of a delivery
         if delivery_owner == owner:
             query_details = parse_query(args['query'])
             listing = query_details['listing_hash']
             listing_bytes = int(query_details['file_size'])
             mimetype = query_details['mimetype']
 
-            bytes_purchased = get_bytes_purchased(owner)
-            if bytes_purchased >= listing_bytes:
+            # there are 3 situations that permit a download:
+            #  1. a completed delivery exists (likely a download error)
+            download_ready = delivered_bytes >= requested_bytes
 
-                #TODO: stream this from s3 rather than downloading then streaming
+            #  2. the owner bought this in the past
+            past_purchase = was_delivered(delivery_hash, owner)
+
+            #  3. we are in a current purchase flow
+            bytes_purchased = get_bytes_purchased(owner)
+            current_purchase = bytes_purchased >= listing_bytes
+
+            if download_ready or past_purchase or current_purchase:
+
+                # TODO: stream this from s3 rather than downloading then streaming
                 tmp_file = f'{current_app.config["TMP_FILE_STORAGE"]}{listing}'
 
                 try:
@@ -47,7 +59,8 @@ class DeliveryRoute(Resource):
                 # We have the file from S3, mark it as accessed and delivered
                 accessed_tx = listing_accessed(delivery_hash, listing, listing_bytes, price_and_time[0])
                 current_app.logger.info(f'{owner} used {listing_bytes} bytes accessing {listing}')
-                delivery_url = g.w3.keccak(text=f"{current_app.config['DNS_NAME']}/deliveries/?delivery_hash={delivery_hash}")
+                delivery_url = g.w3.keccak(
+                    text=f"{current_app.config['DNS_NAME']}/deliveries/?delivery_hash={delivery_hash}")
 
                 @after_this_request
                 def remove_file(response):
@@ -75,8 +88,8 @@ class DeliveryRoute(Resource):
         """
         # stringify the args so celery can serialize them if needed
         hash_str = hash if isinstance(hash, str) else g.w3.toHex(hash)
-        url_str = g.w3.toHex(url) # we know it is not a str
-        tx_str = tx if isinstance(tx, str) else g.w3.toHex(tx) # should not be a str, but just in case
+        url_str = g.w3.toHex(url)  # we know it is not a str
+        tx_str = tx if isinstance(tx, str) else g.w3.toHex(tx)  # should not be a str, but just in case
         price = price_and_time[0]
         duration = price_and_time[1]
         # NOTE do not store the results of delivered tasks
