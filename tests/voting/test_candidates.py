@@ -59,7 +59,6 @@ def test_get_candidate(w3, test_client, dynamo_table, mocked_cloudwatch):
 
     candidate = test_client.get(f'/candidates/application/{applicant}')
     payload = json.loads(candidate.data)
-    print(payload)
     assert candidate.status_code == 200
     assert payload['kind'] == 1
     assert payload['listing_hash'] == applicant

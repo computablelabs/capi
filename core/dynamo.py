@@ -37,6 +37,7 @@ def get_listings():
         current_app.logger.info('no items returned in db query')
         return {}
 
+@metrics_collector
 def get_listing(hash):
     """
     Given a listing hash fetch a single listing from dynamo
