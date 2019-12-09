@@ -1,8 +1,10 @@
 from flask import current_app, g
 from app import celery
-from core.protocol import set_w3, delivered
+from core.protocol import set_w3
 import core.constants as C
 from core.helpers import wait_for_receipt
+from .helpers import delivered
+
 
 @celery.task
 def delivered_async(delivery_hash, delivery_url, accessed_tx, price, duration):

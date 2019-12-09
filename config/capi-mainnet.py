@@ -32,3 +32,6 @@ if 'LOG_LEVEL' in secrets:
     # Setting log leve in secrets allows changing log level without a code push
     LOG_LEVEL = secrets['LOG_LEVEL']
 JWT_SECRET_KEY = secrets['JWT_SECRET_KEY']
+
+# Don't try to search logs back in time past this number
+GENESIS_BLOCK = 8966214
