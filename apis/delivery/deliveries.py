@@ -26,10 +26,15 @@ class DeliveryRoute(Resource):
         args = delivery_parser.parse_args()
         delivery_hash = args['delivery_hash']
         owner = get_jwt_identity()
+
+        # in a past delivery situation there will be no delivery, but delivered event(s)
+        past_purchase = was_delivered(delivery_hash, owner)
+
         current_app.logger.info(f'Retrieving {delivery_hash} for delivery')
         delivery_owner, requested_bytes, delivered_bytes = get_delivery(delivery_hash)
-        # NOTE that this line line confirms the existence of a delivery
-        if delivery_owner == owner:
+
+        # confirm that owner is past or current...
+        if past_purchase or delivery_owner == owner:
             query_details = parse_query(args['query'])
             listing = query_details['listing_hash']
             listing_bytes = int(query_details['file_size'])
@@ -37,39 +42,42 @@ class DeliveryRoute(Resource):
             title = query_details['title']
 
             # there are 3 situations that permit a download:
-            #  1. a completed delivery exists (likely a download error)
-            download_ready = delivered_bytes >= requested_bytes
 
-            #  2. the owner bought this in the past
-            past_purchase = was_delivered(delivery_hash, owner)
+            #  1. the owner bought this in the past, past_purchase, from above
 
-            #  3. we are in a current purchase flow
-            bytes_purchased = get_bytes_purchased(owner)
-            current_purchase = bytes_purchased >= listing_bytes
+            #  2. a completed delivery exists but no past purchases (likely a download error)
+            download_ready = False if past_purchase else delivered_bytes >= requested_bytes
 
-            if download_ready or past_purchase or current_purchase:
+            #  3. we are in a current purchase flow (not 1 or 2)
+            bytes_purchased = 0 if (past_purchase or download_ready) else get_bytes_purchased(owner)
+            current_purchase = False if (past_purchase or download_ready) else bytes_purchased >= listing_bytes
+
+            if past_purchase or download_ready or current_purchase:
 
                 # TODO: stream this from s3 rather than downloading then streaming
                 tmp_file = f'{current_app.config["TMP_FILE_STORAGE"]}{listing}'
 
-                try:
-                    price_and_time = get_gas_price_and_wait_time()
-                except Exception:
-                    price_and_time = [C.MAINNET_GAS_DEFAULT, C.EVM_TIMEOUT]
+                # the current_purchase needs to perform protocol duties
+                if current_purchase:
+                    try:
+                        price_and_time = get_gas_price_and_wait_time()
+                    except Exception:
+                        price_and_time = [C.MAINNET_GAS_DEFAULT, C.EVM_TIMEOUT]
 
-                # We have the file from S3, mark it as accessed and delivered
-                accessed_tx = listing_accessed(delivery_hash, listing, listing_bytes, price_and_time[0])
-                current_app.logger.info(f'{owner} used {listing_bytes} bytes accessing {listing}')
-                delivery_url = g.w3.keccak(
-                    text=f"{current_app.config['DNS_NAME']}/deliveries/?delivery_hash={delivery_hash}")
+                    # We have the file from S3, mark it as accessed and delivered
+                    accessed_tx = listing_accessed(delivery_hash, listing, listing_bytes, price_and_time[0])
+                    current_app.logger.info(f'{owner} used {listing_bytes} bytes accessing {listing}')
+                    delivery_url = g.w3.keccak(
+                        text=f"{current_app.config['DNS_NAME']}/deliveries/?delivery_hash={delivery_hash}")
 
                 @after_this_request
                 def remove_file(response):
                     try:
                         # first see if we can remove the tmp file
                         os.remove(tmp_file)
-                        current_app.logger.info('Celery "delivered" task begun')
-                        self.call_delivered(delivery_hash, delivery_url, accessed_tx, price_and_time)
+                        if current_purchase:
+                            current_app.logger.info('Celery "delivered" task begun')
+                            self.call_delivered(delivery_hash, delivery_url, accessed_tx, price_and_time)
                     except Exception as error:
                         current_app.logger.error(f'Error removing file or calling celery "delivered" task {error}')
                     return response
