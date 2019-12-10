@@ -75,7 +75,9 @@ class DeliveryRoute(Resource):
                     return response
 
                 current_app.logger.info('Requested delivery sent to user')
-                response = make_response(send_file(tmp_file, mimetype=mimetype, attachment_filename=listing, as_attachment=True))
+                response = make_response(
+                    send_file(tmp_file, mimetype=mimetype, attachment_filename=listing, as_attachment=True)
+                )
                 file_extension = C.FILE_EXTENSIONS.get(mimetype, '')
                 response.headers['Filename'] = f'{title}{file_extension}'
                 return response
