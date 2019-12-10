@@ -33,14 +33,15 @@ REGISTERED = 'This API is currently the registered datatrust'
 REGISTERED_CANDIDATE = 'This API is an active candidate for datatrust'
 RESOLVED = 'Candidate %s has been marked for resolution'
 NEED_CMT_TO_STAKE = 'Insufficient CMT available to pay the stake for this operation.'
-NEED_CMT_TO_PREVIEW = 'Preview requires that the requester have a CMT balance greater than or equal to the current market stake'
+NEED_CMT_TO_PREVIEW = '''Preview requires that the requester have a CMT balance greater
+than or equal to the current market stake'''
 NOT_LISTED = 'Given listing hash is not a valid Listing'
 NOT_A_CANDIDATE = 'Given hash is not a valid candidate'
 
 # Celery related
-CELERY_TASK_TIMEOUT = 5.0 # seconds, only applies to fetching task from redis
+CELERY_TASK_TIMEOUT = 5.0  # seconds, only applies to fetching task from redis
 CELERY_TASK_FETCHED = 'Asynchronous task %s fetched successfully'
-CELERY_TASK_CREATED= 'Asynchronous task %s created successfully'
+CELERY_TASK_CREATED = 'Asynchronous task %s created successfully'
 CELERY_TASK_NOT_FOUND = 'Asynchronous task %s not found'
 CELERY_TASK_TIMED_OUT = 'Asynchronous task %s timed out'
 STARTED = 'STARTED'
@@ -53,15 +54,15 @@ WAITING_FOR_NAMED_RECEIPT = 'Waiting on %s transaction receipt for %s'
 NAMED_TRANSACTION_MINED = '%s transaction mined: %s'
 
 # EVM related (also celery task)
-EVM_TIMEOUT = 600 # seconds. how long to wait before bailing on things like `waitForTransactionReceipt`
-POA_GAS_PRICE = 2 # Skynet is configured to take 2 Gwei, and rinkeby will as well
-MAINNET_GAS_DEFAULT = 10 # kind of high gas price that should work in case of fetching it
+EVM_TIMEOUT = 600  # seconds. how long to wait before bailing on things like `waitForTransactionReceipt`
+POA_GAS_PRICE = 2  # Skynet is configured to take 2 Gwei, and rinkeby will as well
+MAINNET_GAS_DEFAULT = 10  # kind of high gas price that should work in case of fetching it
 TRANSACTION_TIMEOUT = 'Transaction mining time has exceeded the timeout of %s'
-TRANSACTION_RETRY = 15 # seconds to sleep before checking for transaction receipt
+TRANSACTION_RETRY = 15  # seconds to sleep before checking for transaction receipt
 
 # File extensions for known mimetypes
 FILE_EXTENSIONS = {
-    #application
+    # application
     'application/applefile': '.applefile',
     'application/dicom': '.dicom',
     'application/ecmascript': '.js',
@@ -115,7 +116,7 @@ FILE_EXTENSIONS = {
     'application/xml-dtd': '.xml',
     'application/zip': '.zip',
 
-    #audio
+    # audio
     'audio/aac': '.aac',
     'audio/ac3': '.ac3',
     'audio/MPA': '.mpa',
@@ -127,20 +128,20 @@ FILE_EXTENSIONS = {
     'audio/vorbis': '.vorbis',
     'audio/vorbis-config': '.vorbis',
 
-    #font
+    # font
     'font/otf': '.otf',
     'font/ttf': '.ttf',
     'font/woff': '.woff',
     'font/woff2': '.woff2',
 
-    #image
+    # image
     'image/bmp': '.bmp',
     'image/jpg': '.jpg',
     'image/jpeg': '.jpeg',
     'image/png': '.png',
     'image/tiff': '.tiff',
 
-    #text
+    # text
     'text/calendar': '.cal',
     'text/css': '.css',
     'text/csv': '.csv',
@@ -154,7 +155,7 @@ FILE_EXTENSIONS = {
     'text/vcard': '.vcard',
     'text/xml': '.xml',
 
-    #video
+    # video
     'video/H261': '.h261',
     'video/H263': '.h263',
     'video/H264': '.h264',
