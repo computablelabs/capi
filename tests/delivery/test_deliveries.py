@@ -334,6 +334,7 @@ def test_successful_delivery(mock_call, w3, ether_token, parameterizer_opts, dat
     content_disposition = delivery.headers['Content-Disposition'].split(';')
     assert content_disposition[0] == 'attachment'
     assert content_disposition[1].strip() == f'filename={w3.toHex(listing_hash)}'
+    assert delivery.headers['Filename'] == 'so many catz.txt'
 
     # Ensure downloaded file is removed from Docker container
     with pytest.raises(FileNotFoundError) as exc:
@@ -351,7 +352,7 @@ def test_successful_delivery(mock_call, w3, ether_token, parameterizer_opts, dat
     assert 'get_bytes_purchased' in metrics_keys
     assert 'listing_accessed' in metrics_keys
     assert 'delivered' in metrics_keys
-    assert 'get_listing_mimetype_and_size' in metrics_keys
+    assert 'get_listing_mimetype_size_and_title' in metrics_keys
     assert 'get_listing_and_meta' in metrics_keys
 
 def test_was_delivered(w3):

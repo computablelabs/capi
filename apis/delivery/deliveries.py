@@ -1,5 +1,5 @@
 import os
-from flask import current_app, g, send_file, after_this_request
+from flask import current_app, g, send_file, after_this_request, make_response
 from flask_restplus import Namespace, Resource
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from core import constants as C
@@ -34,6 +34,7 @@ class DeliveryRoute(Resource):
             listing = query_details['listing_hash']
             listing_bytes = int(query_details['file_size'])
             mimetype = query_details['mimetype']
+            title = query_details['title']
 
             # there are 3 situations that permit a download:
             #  1. a completed delivery exists (likely a download error)
@@ -74,7 +75,10 @@ class DeliveryRoute(Resource):
                     return response
 
                 current_app.logger.info('Requested delivery sent to user')
-                return send_file(tmp_file, mimetype=mimetype, attachment_filename=listing, as_attachment=True)
+                response = make_response(send_file(tmp_file, mimetype=mimetype, attachment_filename=listing, as_attachment=True))
+                file_extension = C.FILE_EXTENSIONS.get(mimetype, '')
+                response.headers['Filename'] = f'{title}{file_extension}'
+                return response
             else:
                 current_app.logger.error(C.INSUFFICIENT_PURCHASED)
                 api.abort(412, C.INSUFFICIENT_PURCHASED)

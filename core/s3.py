@@ -20,7 +20,7 @@ def set_s3_client(s3=None):
         g.s3 = s3
 
 @metrics_collector
-def get_listing_mimetype_and_size(hash):
+def get_listing_mimetype_size_and_title(hash):
     """
     Return the mimetype and filesize for a given listing
     """
@@ -28,14 +28,15 @@ def get_listing_mimetype_and_size(hash):
         Key={
             'listing_hash': hash
         },
-        ProjectionExpression='file_type, size'
+        ProjectionExpression='file_type, size, title'
     )
     if 'Item' in response:
         file_type = response['Item'].get('file_type', 'unknown')
         size = response['Item'].get('size', 0)
-        return file_type, size
+        title = response['Item'].get('title', 'none')
+        return file_type, size, title
     else:
-        return 'unknown', 0
+        return 'unknown', 0, 'none'
 
 @metrics_collector
 def get_listing_and_meta(hash):
@@ -49,10 +50,11 @@ def get_listing_and_meta(hash):
         hash,
         download_location
     )
-    mimetype, file_size = get_listing_mimetype_and_size(hash)
+    mimetype, file_size, title = get_listing_mimetype_size_and_title(hash)
 
     return dict(
         listing_hash=hash,
         mimetype=mimetype,
-        file_size=file_size
+        file_size=file_size,
+        title=title
     )
