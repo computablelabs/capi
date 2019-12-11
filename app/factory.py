@@ -1,7 +1,7 @@
 import os
 from flask import Flask, request
 from flask_cors import CORS
-from werkzeug.middleware.proxy_fix import ProxyFix # cuz https is hard i guess
+from werkzeug.middleware.proxy_fix import ProxyFix  # cuz https is hard i guess
 from apis import api
 from core.cli import admin
 from core.protocol import set_w3
@@ -15,6 +15,8 @@ from flask_jwt_extended import JWTManager
 
 # this little dance is so that we can align flask and celery on name
 a_name = os.path.dirname(os.path.realpath(__file__)).split('/')[-1]
+
+
 # make the name overrideable just in case
 def create_app(app_name=a_name, **kwargs):
     # create and config the app
@@ -31,7 +33,7 @@ def create_app(app_name=a_name, **kwargs):
     # register the CLI admin blueprint
     app.register_blueprint(admin)
     # Allow CORS
-    CORS(app, origins='*', expose_headers=['Content-Disposition'])
+    CORS(app, origins='*', expose_headers=['Content-Disposition', 'Filename'])
     # initialize the celery with this app if present
     if kwargs.get('celery'):
         initialize(kwargs.get('celery'), app)
@@ -52,7 +54,7 @@ def create_app(app_name=a_name, **kwargs):
         set_dynamo_table()
         set_s3_client()
         set_cloudwatch()
-    
+
     @app.after_request
     def finalize(response):
         """
