@@ -334,6 +334,7 @@ def test_successful_delivery(mock_call, w3, ether_token, parameterizer_opts, dat
     content_disposition = delivery.headers['Content-Disposition'].split(';')
     assert content_disposition[0] == 'attachment'
     assert content_disposition[1].strip() == f'filename={w3.toHex(listing_hash)}'
+    assert delivery.headers['Filename'] == 'so many catz.txt'
 
     # Ensure downloaded file is removed from Docker container
     with pytest.raises(FileNotFoundError) as exc:
@@ -351,7 +352,7 @@ def test_successful_delivery(mock_call, w3, ether_token, parameterizer_opts, dat
     assert 'get_bytes_purchased' in metrics_keys
     assert 'listing_accessed' in metrics_keys
     assert 'delivered' in metrics_keys
-    assert 'get_listing_mimetype_and_size' in metrics_keys
+    assert 'get_listing_mimetype_size_and_title' in metrics_keys
     assert 'get_listing_and_meta' in metrics_keys
 
 def test_was_delivered(w3):
@@ -359,3 +360,74 @@ def test_was_delivered(w3):
     delivery_hash = w3.keccak(text='monty_pythons_delivery_hash')
 
     assert was_delivered(delivery_hash, buyer)
+
+def test_re_download(w3, ether_token, datatrust, pk, user, dynamo_table, s3_client, test_client, mocked_cloudwatch):
+    """
+    will not use any protocol...
+    """
+    initial_balance = call(ether_token.balance_of(datatrust.address))
+    buyer = w3.eth.accounts[10]
+    listing_hash = w3.keccak(text='a_witch')
+    file_contents = 'burn_the_witch'
+    mimetype = 'application/text'
+    row = {
+            'listing_hash': w3.toHex(listing_hash),
+            'title': 'so many catz',
+            'file_type': mimetype,
+            'size': len(file_contents.encode('utf-8'))
+        }
+
+    g.table.put_item(Item=row)
+
+    # Put the listing in S3
+    s3_object = g.s3.put_object(
+        Body=file_contents,
+        Bucket=current_app.config['S3_DESTINATION'],
+        Key=w3.toHex(listing_hash)
+    )
+
+    delivery_hash = w3.keccak(text='monty_pythons_delivery_hash')
+    amount = 14 # derived from storing the actual file in S3 and checking size
+
+    # Get a jwt
+    msg = 'weighs as much as a duck'
+    signed = w3.eth.account.sign_message(encode_defunct(text=msg), private_key=pk)
+    login = test_client.post('/authorize/', json={
+        'message': msg,
+        'signature': w3.toHex(signed.signature),
+        'public_key': buyer
+    })
+
+    payload = json.loads(login.data)
+    access_token = payload['access_token']
+
+    # Get the listing
+    headers = {
+        'Authorization': f'Bearer {access_token}'
+    }
+
+    delivery = test_client.get(
+        '/deliveries/',
+        query_string={
+            'delivery_hash': w3.toHex(delivery_hash),
+            'query': w3.toHex(listing_hash)
+        },
+        headers=headers
+    )
+
+    mimetype = 'application/text'
+    assert delivery.headers['Content-Type'] == mimetype
+    assert int(delivery.headers['Content-Length']) == amount
+    assert delivery.data == file_contents.encode()
+    content_disposition = delivery.headers['Content-Disposition'].split(';')
+    assert content_disposition[0] == 'attachment'
+    assert content_disposition[1].strip() == f'filename={w3.toHex(listing_hash)}'
+
+    # no protocol txs happen so datatrust gets no money
+    final_balance = call(ether_token.balance_of(datatrust.address))
+    assert final_balance == initial_balance
+
+    # Ensure downloaded file is removed from Docker container
+    with pytest.raises(FileNotFoundError) as exc:
+        listing_file = f'{current_app.config["TMP_FILE_STORAGE"]}{w3.toHex(listing_hash)}'
+        open(listing_file, 'r')
