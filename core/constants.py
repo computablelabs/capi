@@ -13,6 +13,7 @@ candidate_kinds = {
 
 # Verb Messages
 NEW_LISTING_SUCCESS = 'Listing upload success. Data hash sent to protocol'
+NEW_CONSENT_SUCCESS = 'Consent upload success'
 MISSING_PAYLOAD_DATA = 'Incomplete payload in request body: %s'
 SERVER_ERROR = 'Operation failed due to internal server error: %s'
 LOGIN_SUCCESS = 'Signed message verified, access authorized'
