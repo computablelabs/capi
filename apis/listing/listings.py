@@ -51,7 +51,7 @@ class ListingRoute(Resource):
         return dict(listing), 200
 
 # GET multiple listings or POST a listing
-@api.route('/')
+@api.route('/', methods=['GET', 'POST'])
 class ListingsRoute(Resource):
     @api.expect(from_to_owner)
     @api.marshal_with(Listings)
